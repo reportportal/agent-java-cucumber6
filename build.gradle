@@ -1,0 +1,60 @@
+apply plugin: 'java'
+
+project.ext.releaseMode = project.hasProperty('releaseMode')
+
+def branch = releaseMode ? '5.0.0' : 'develop'
+apply from: "https://raw.githubusercontent.com/reportportal/gradle-scripts/$branch/build-quality.gradle"
+apply from: "https://raw.githubusercontent.com/reportportal/gradle-scripts/$branch/release-commons.gradle"
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+repositories {
+    jcenter()
+    maven { url "http://dl.bintray.com/epam/reportportal" }
+    maven { url "https://jitpack.io" }
+}
+
+project.ext.githubUserName = project.hasProperty('githubUserName') ? githubUserName : ""
+project.ext.githubToken = project.hasProperty('githubToken') ? githubToken : ""
+
+publishing {
+    repositories {
+        maven {
+            name = "Cucumber6 GitHub Packages"
+            url = uri("https://maven.pkg.github.com/reportportal/agent-java-cucumber6")
+            credentials {
+                username = githubUserName
+                password = githubToken
+            }
+        }
+    }
+}
+
+dependencies {
+    implementation 'com.epam.reportportal:client-java:5.0.2'
+    implementation 'com.epam.reportportal:commons-model:5.0.0'
+    implementation 'io.cucumber:cucumber-java:6.0.0'
+    implementation 'com.google.code.findbugs:jsr305:3.0.2'
+
+    testImplementation('com.github.reportportal:agent-java-test-utils:ddcf50ee20')
+
+    testImplementation 'org.hamcrest:hamcrest-all:1.3'
+    testImplementation 'junit:junit:4.12'
+    testImplementation 'org.mockito:mockito-core:3.3.3'
+    testImplementation 'io.cucumber:cucumber-testng:6.0.0'
+}
+
+wrapper {
+    gradleVersion = '5.4.1'
+}
+
+processResources {
+    filesMatching('agent.properties') {
+        expand(project.properties)
+    }
+}
+
+def releaseDependencies = [bintrayUpload, publish]
+releaseDependencies.addAll(afterReleaseBuild.getDependsOn())
+afterReleaseBuild.setDependsOn(releaseDependencies)
