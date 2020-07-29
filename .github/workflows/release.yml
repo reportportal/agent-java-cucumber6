@@ -17,6 +17,11 @@ on:
   push:
     branches:
       - master
+    paths-ignore:
+      - README.md
+      - README_TEMPLATE.md
+      - gradle.properties
+      - CHANGELOG.md
 
 env:
   VERSION_FILE: gradle.properties
