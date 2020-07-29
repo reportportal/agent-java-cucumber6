@@ -18,6 +18,7 @@ on:
     branches:
       - master
     paths-ignore:
+      - '.github/**'
       - README.md
       - README_TEMPLATE.md
       - gradle.properties
