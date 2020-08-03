@@ -12,8 +12,8 @@ import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.cucumber.testng.AbstractTestNGCucumberTests;
 import io.cucumber.testng.CucumberOptions;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.Arrays;
@@ -41,6 +41,13 @@ public class ParameterTest {
 
 	}
 
+	@CucumberOptions(features = "src/test/resources/features/TwoScenarioOutlineParameters.feature", glue = {
+			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
+			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
+	public static class RunTwoOutlineParametersTestStepReporter extends AbstractTestNGCucumberTests {
+
+	}
+
 	private final String launchId = CommonUtils.namedId("launch_");
 	private final String suiteId = CommonUtils.namedId("suite_");
 	private final List<String> testIds = Stream.generate(() -> CommonUtils.namedId("test_")).limit(3).collect(Collectors.toList());
@@ -53,7 +60,7 @@ public class ParameterTest {
 	private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 	private final ReportPortal reportPortal = ReportPortal.create(client, parameters, executorService);
 
-	@Before
+	@BeforeEach
 	public void initLaunch() {
 		TestUtils.mockLaunch(client, launchId, suiteId, tests);
 		TestScenarioReporter.RP.set(reportPortal);
@@ -67,7 +74,7 @@ public class ParameterTest {
 	);
 
 	@Test
-	public void verifyClientRetrievesParametersFromRequest() {
+	public void verify_agent_retrieves_parameters_from_request() {
 		TestUtils.runTests(RunOutlineParametersTestStepReporter.class);
 
 		verify(client, times(1)).startTestItem(any());
@@ -90,5 +97,29 @@ public class ParameterTest {
 			assertThat(param.getKey(), equalTo(expectedParam.getKey()));
 			assertThat(param.getValue(), equalTo(expectedParam.getValue().toString()));
 		});
+	}
+
+	@Test
+	public void verify_agent_retrieves_two_parameters_from_request() {
+		TestUtils.runTests(RunTwoOutlineParametersTestStepReporter.class);
+
+		verify(client, times(1)).startTestItem(any());
+		verify(client, times(3)).startTestItem(same(suiteId), any());
+		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(client, times(3)).startTestItem(same(testIds.get(0)), captor.capture());
+		verify(client, times(3)).startTestItem(same(testIds.get(1)), captor.capture());
+		verify(client, times(3)).startTestItem(same(testIds.get(2)), captor.capture());
+
+		List<StartTestItemRQ> items = captor.getAllValues();
+		List<StartTestItemRQ> twoParameterItems = IntStream.range(0, items.size())
+				.filter(i -> i % 3 == 0)
+				.mapToObj(items::get)
+				.collect(Collectors.toList());
+		List<StartTestItemRQ> oneParameterItems = IntStream.range(0, items.size())
+				.filter(i -> i % 3 == 2)
+				.mapToObj(items::get)
+				.collect(Collectors.toList());
+		twoParameterItems.forEach(i -> assertThat(i.getParameters(), allOf(notNullValue(), hasSize(2))));
+		oneParameterItems.forEach(i -> assertThat(i.getParameters(), allOf(notNullValue(), hasSize(1))));
 	}
 }

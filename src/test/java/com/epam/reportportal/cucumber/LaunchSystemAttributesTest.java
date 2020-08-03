@@ -8,10 +8,9 @@ import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import io.reactivex.Maybe;
 import io.reactivex.MaybeEmitter;
 import io.reactivex.MaybeOnSubscribe;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -24,7 +23,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import static org.mockito.Matchers.any;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
@@ -44,18 +45,17 @@ public class LaunchSystemAttributesTest {
 	@Mock
 	private ListenerParameters listenerParameters;
 
-	@BeforeClass
+	@BeforeAll
 	public static void initKeys() {
 		properties.put("os", Pattern.compile("^.+\\|.+\\|.+$"));
 		properties.put("jvm", Pattern.compile("^.+\\|.+\\|.+$"));
 		properties.put("agent", Pattern.compile("^test-agent\\|test-1\\.0$"));
 	}
 
-	@Before
+	@BeforeEach
 	public void initLaunch() {
 		MockitoAnnotations.initMocks(this);
 		when(listenerParameters.getEnable()).thenReturn(true);
-		when(listenerParameters.getBaseUrl()).thenReturn("http://example.com");
 		when(listenerParameters.getIoPoolSize()).thenReturn(10);
 		when(listenerParameters.getBatchLogsSize()).thenReturn(5);
 		stepReporter = new StepReporter() {
@@ -90,7 +90,7 @@ public class LaunchSystemAttributesTest {
 
 		StartLaunchRQ startLaunchRequest = launchRQArgumentCaptor.getValue();
 
-		Assert.assertNotNull(startLaunchRequest.getAttributes());
+		assertThat(startLaunchRequest.getAttributes(), notNullValue());
 
 		List<ItemAttributesRQ> attributes = Lists.newArrayList(startLaunchRequest.getAttributes());
 
@@ -100,14 +100,14 @@ public class LaunchSystemAttributesTest {
 			}
 		}
 
-		Assert.assertEquals(3, attributes.size());
+		assertThat(attributes, hasSize(3));
 
 		for (ItemAttributesRQ attribute : attributes) {
-			Assert.assertTrue(attribute.isSystem());
+			assertThat(attribute.isSystem(), equalTo(Boolean.TRUE));
 
 			Pattern pattern = LaunchSystemAttributesTest.this.getPattern(attribute);
-			Assert.assertNotNull(pattern);
-			Assert.assertTrue(pattern.matcher(attribute.getValue()).matches());
+			assertThat(pattern, notNullValue());
+			assertThat(attribute.getValue(), allOf(notNullValue(), matchesPattern(pattern)));
 		}
 
 	}

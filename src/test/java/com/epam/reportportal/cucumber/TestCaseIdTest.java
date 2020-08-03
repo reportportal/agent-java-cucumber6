@@ -9,10 +9,9 @@ import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.util.test.CommonUtils;
 import io.cucumber.testng.AbstractTestNGCucumberTests;
 import io.cucumber.testng.CucumberOptions;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mock;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -51,14 +50,14 @@ public class TestCaseIdTest {
 	private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 	private final ReportPortal reportPortal = ReportPortal.create(client, params, executorService);
 
-	@Before
+	@BeforeEach
 	public void setup() {
 		TestUtils.mockLaunch(client, launchId, suiteId, testId, stepIds);
 		TestScenarioReporter.RP.set(reportPortal);
 		TestStepReporter.RP.set(reportPortal);
 	}
 
-	@After
+	@AfterEach
 	public void tearDown() {
 		CommonUtils.shutdownExecutorService(executorService);
 	}
