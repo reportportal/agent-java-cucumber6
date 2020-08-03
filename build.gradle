@@ -43,6 +43,12 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     testImplementation 'org.mockito:mockito-core:3.3.3'
     testImplementation 'io.cucumber:cucumber-testng:6.0.0'
+    testImplementation 'ch.qos.logback:logback-classic:1.2.3'
+    testImplementation ('com.epam.reportportal:logger-java-logback:5.0.2') {
+        exclude module: 'client-java'
+    }
+
+
 }
 
 wrapper {
