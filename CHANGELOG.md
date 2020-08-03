@@ -3,6 +3,5 @@
 ## [Unreleased]
 
 ## [0.0.1-ALPHA]
-
-## [0.0.1]
 ## Added
+- Initial release to Public Maven Repositories
