@@ -6,16 +6,12 @@ import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import io.reactivex.Maybe;
-import io.reactivex.MaybeEmitter;
-import io.reactivex.MaybeOnSubscribe;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 import rp.com.google.common.collect.Lists;
 
 import java.util.HashMap;
@@ -33,7 +29,7 @@ import static org.mockito.Mockito.*;
  */
 public class LaunchSystemAttributesTest {
 
-	private static final Map<String, Pattern> properties = new HashMap<String, Pattern>();
+	private static final Map<String, Pattern> properties = new HashMap<>();
 
 	private static final String SKIPPED_ISSUE_KEY = "skippedIssue";
 
@@ -68,18 +64,10 @@ public class LaunchSystemAttributesTest {
 
 	@Test
 	public void shouldRetrieveSystemAttributes() {
-		when(reportPortalClient.startLaunch(any(StartLaunchRQ.class))).then(new Answer<Object>() {
-			@Override
-			public Object answer(InvocationOnMock t) throws Throwable {
-				return Maybe.create(new MaybeOnSubscribe<Object>() {
-					@Override
-					public void subscribe(MaybeEmitter<Object> emitter) throws Exception {
-						emitter.onSuccess("launchId");
-						emitter.onComplete();
-					}
-				}).cache();
-			}
-		});
+		when(reportPortalClient.startLaunch(any(StartLaunchRQ.class))).then(t -> Maybe.create(emitter -> {
+			emitter.onSuccess("launchId");
+			emitter.onComplete();
+		}).cache());
 
 		stepReporter.beforeLaunch();
 
@@ -101,20 +89,16 @@ public class LaunchSystemAttributesTest {
 		}
 
 		assertThat(attributes, hasSize(3));
-
-		for (ItemAttributesRQ attribute : attributes) {
-			assertThat(attribute.isSystem(), equalTo(Boolean.TRUE));
-
-			Pattern pattern = LaunchSystemAttributesTest.this.getPattern(attribute);
+		attributes.forEach(attr -> {
+			assertThat(attr.isSystem(), equalTo(Boolean.TRUE));
+			Pattern pattern = LaunchSystemAttributesTest.this.getPattern(attr);
 			assertThat(pattern, notNullValue());
-			assertThat(attribute.getValue(), allOf(notNullValue(), matchesPattern(pattern)));
-		}
-
+			assertThat(attr.getValue(), allOf(notNullValue(), matchesPattern(pattern)));
+		});
 	}
 
 	private Pattern getPattern(ItemAttributesRQ attribute) {
 		return properties.get(attribute.getKey());
 
 	}
-
 }
