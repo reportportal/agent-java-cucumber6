@@ -38,6 +38,8 @@ import java.net.URI;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static com.epam.reportportal.cucumber.Utils.getCodeRef;
+import static com.epam.reportportal.cucumber.Utils.getDescription;
 import static rp.com.google.common.base.Strings.isNullOrEmpty;
 import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 
@@ -138,11 +140,14 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 */
 	protected void beforeScenario(RunningContext.FeatureContext currentFeatureContext, RunningContext.ScenarioContext currentScenarioContext,
 			String scenarioName) {
+		String description = getDescription(currentFeatureContext.getUri());
+		String codeRef = getCodeRef(currentFeatureContext.getUri(), currentScenarioContext.getLine());
 		Maybe<String> id = Utils.startNonLeafNode(
 				launch.get(),
 				currentFeatureContext.getFeatureId(),
 				scenarioName,
-				currentFeatureContext.getUri() + ":" + currentScenarioContext.getLine(),
+				description,
+				codeRef,
 				currentScenarioContext.getAttributes(),
 				getScenarioTestItemType()
 		);
@@ -384,7 +389,8 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 
 		StartTestItemRQ rq = new StartTestItemRQ();
 		Maybe<String> root = getRootItemId();
-		rq.setDescription(currentFeatureContext.getUri().toString());
+		rq.setDescription(getDescription(currentFeatureContext.getUri()));
+		rq.setCodeRef(getCodeRef(currentFeatureContext.getUri(), 0));
 		rq.setName(Utils.buildNodeName(featureKeyword, AbstractReporter.COLON_INFIX, featureName, null));
 		rq.setAttributes(currentFeatureContext.getAttributes());
 		rq.setStartTime(Calendar.getInstance().getTime());
