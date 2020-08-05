@@ -15,6 +15,7 @@
  */
 package com.epam.reportportal.cucumber;
 
+import com.epam.reportportal.service.item.TestCaseIdEntry;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.cucumber.messages.Messages;
 import io.cucumber.plugin.event.*;
@@ -23,6 +24,8 @@ import io.reactivex.Maybe;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
+
+import static java.util.Optional.ofNullable;
 
 /**
  * Cucumber reporter for ReportPortal that reports individual steps as test
@@ -76,7 +79,7 @@ public class StepReporter extends AbstractReporter {
 				Collections.emptyList();
 		rq.setParameters(Utils.getParameters(arguments, step.getText()));
 		rq.setCodeRef(codeRef);
-		rq.setTestCaseId(Utils.getTestCaseId(testStep, codeRef).getId());
+		rq.setTestCaseId(ofNullable(Utils.getTestCaseId(testStep, codeRef)).map(TestCaseIdEntry::getId).orElse(null));
 		rq.setAttributes(Utils.getAttributes(testStep));
 		currentStepId = launch.get().startTestItem(currentScenarioContext.getId(), rq);
 	}

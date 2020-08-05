@@ -28,8 +28,6 @@ import io.cucumber.plugin.ConcurrentEventListener;
 import io.cucumber.plugin.event.*;
 import io.reactivex.Maybe;
 import org.apache.commons.lang3.tuple.Pair;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import rp.com.google.common.base.Supplier;
 import rp.com.google.common.base.Suppliers;
 import rp.com.google.common.io.ByteSource;
@@ -59,8 +57,6 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
     protected Supplier<Launch> launch;
 	static final String COLON_INFIX = ": ";
 	private static final String SKIPPED_ISSUE_KEY = "skippedIssue";
-	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractReporter.class);
-
 	private final Map<URI, RunningContext.FeatureContext> currentFeatureContextMap = new ConcurrentHashMap<>();
 
 	private final Map<Pair<String, URI>, RunningContext.ScenarioContext> currentScenarioContextMap = new ConcurrentHashMap<>();
@@ -70,11 +66,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	// End of feature occurs once launch is finished.
 	private final Map<URI, Date> featureEndTime = new ConcurrentHashMap<>();
 
-	private Map<Long, RunningContext.ScenarioContext> threadCurrentScenarioContextMap = new ConcurrentHashMap<>();
-
-	protected void setThreadCurrentScenarioContextMap(Map<Long, RunningContext.ScenarioContext> threadCurrentScenarioContextMap) {
-		this.threadCurrentScenarioContextMap = threadCurrentScenarioContextMap;
-	}
+	private final Map<Long, RunningContext.ScenarioContext> threadCurrentScenarioContextMap = new ConcurrentHashMap<>();
 
 	/**
 	 * Registers an event handler for a specific event.
