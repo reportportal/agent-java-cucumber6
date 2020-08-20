@@ -7,11 +7,13 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.util.test.CommonUtils;
+import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.cucumber.testng.AbstractTestNGCucumberTests;
 import io.cucumber.testng.CucumberOptions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -19,6 +21,11 @@ import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.Matchers.*;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
 
 /**
@@ -68,8 +75,11 @@ public class TestCaseIdTest {
 
 		verify(client, times(1)).startTestItem(any());
 		verify(client, times(1)).startTestItem(same(suiteId), any());
-		verify(client, times(1)).startTestItem(same(testId), any());
+		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(client, times(1)).startTestItem(same(testId), captor.capture());
 
+		StartTestItemRQ rq = captor.getValue();
+		assertThat(rq.getTestCaseId(), allOf(startsWith("file:///"), endsWith("src/test/resources/features/belly.feature:4")));
 	}
 
 	@Test
@@ -78,7 +88,20 @@ public class TestCaseIdTest {
 
 		verify(client, times(1)).startTestItem(any());
 		verify(client, times(1)).startTestItem(same(suiteId), any());
-		verify(client, times(3)).startTestItem(same(testId), any());
+		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(client, times(3)).startTestItem(same(testId), captor.capture());
+
+		List<StartTestItemRQ> steps = captor.getAllValues();
+
+		assertThat(
+				steps.get(0).getTestCaseId(),
+				equalTo("com.epam.reportportal.cucumber.integration.feature.BellyStepdefs.I_have_cukes_in_my_belly[42]")
+		);
+		assertThat(steps.get(1).getTestCaseId(), equalTo("com.epam.reportportal.cucumber.integration.feature.BellyStepdefs.I_wait[1]"));
+		assertThat(
+				steps.get(2).getTestCaseId(),
+				equalTo("com.epam.reportportal.cucumber.integration.feature.BellyStepdefs.my_belly_should_growl[]")
+		);
 
 	}
 }
