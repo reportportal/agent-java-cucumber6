@@ -35,12 +35,13 @@ import org.slf4j.LoggerFactory;
 import rp.com.google.common.collect.ImmutableMap;
 import rp.com.google.common.collect.Lists;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URI;
 import java.util.*;
-import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -112,14 +113,19 @@ public class Utils {
 		return endTime;
 	}
 
-	static Maybe<String> startNonLeafNode(Launch rp, Maybe<String> rootItemId, String name, String description,
+	static Maybe<String> startNonLeafNode(Launch rp, Maybe<String> rootItemId, String name, String description, String codeRef,
 			Set<ItemAttributesRQ> attributes, String type) {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		rq.setDescription(description);
+		rq.setCodeRef(codeRef);
 		rq.setName(name);
 		rq.setAttributes(attributes);
 		rq.setStartTime(Calendar.getInstance().getTime());
 		rq.setType(type);
+		if ("STEP".equals(type)) {
+			rq.setTestCaseId(TestCaseIdUtils.getTestCaseId(codeRef, null).getId());
+		}
+
 		return rp.startTestItem(rootItemId, rq);
 	}
 
@@ -272,9 +278,9 @@ public class Utils {
 				Field stepDefinitionField = stepDefinitionMatch.getClass().getDeclaredField(STEP_DEFINITION_FIELD_NAME);
 				stepDefinitionField.setAccessible(true);
 				Object javaStepDefinition = stepDefinitionField.get(stepDefinitionMatch);
-				Method getLocationMethod = javaStepDefinition.getClass().getDeclaredMethod(GET_LOCATION_METHOD_NAME, boolean.class);
+				Method getLocationMethod = javaStepDefinition.getClass().getMethod(GET_LOCATION_METHOD_NAME);
 				getLocationMethod.setAccessible(true);
-				String fullCodeRef = String.valueOf(getLocationMethod.invoke(javaStepDefinition, true));
+				String fullCodeRef = String.valueOf(getLocationMethod.invoke(javaStepDefinition));
 				return fullCodeRef != null ? fullCodeRef.substring(0, fullCodeRef.indexOf(METHOD_OPENING_BRACKET)) : null;
 			} catch (NoSuchFieldException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
 				return null;
@@ -282,26 +288,6 @@ public class Utils {
 
 		} else {
 			return null;
-		}
-	}
-
-	@Nullable
-	public static TestCaseIdEntry getTestCaseId(TestStep testStep, String codeRef) {
-		Field definitionMatchField = getDefinitionMatchField(testStep);
-		if (definitionMatchField != null) {
-			try {
-				Method method = retrieveMethod(definitionMatchField, testStep);
-				TestCaseId testCaseIdAnnotation = method.getAnnotation(TestCaseId.class);
-				return ofNullable(testCaseIdAnnotation).flatMap(annotation -> ofNullable(getTestCaseId(testCaseIdAnnotation,
-						method,
-						((PickleStepTestStep) testStep).getDefinitionArgument()
-				)))
-						.orElseGet(() -> getTestCaseId(codeRef, ((PickleStepTestStep) testStep).getDefinitionArgument()));
-			} catch (NoSuchFieldException | IllegalAccessException e) {
-				return getTestCaseId(codeRef, ((PickleStepTestStep) testStep).getDefinitionArgument());
-			}
-		} else {
-			return getTestCaseId(codeRef, ((PickleStepTestStep) testStep).getDefinitionArgument());
 		}
 	}
 
@@ -342,24 +328,31 @@ public class Utils {
 		return (Method) methodField.get(javaStepDefinition);
 	}
 
-	@Nullable
-	private static TestCaseIdEntry getTestCaseId(TestCaseId testCaseId, Method method, List<Argument> arguments) {
-		if (testCaseId.parametrized()) {
-			return TestCaseIdUtils.getParameterizedTestCaseId(method, arguments.stream().map(Argument::getValue).toArray());
-		} else {
-			return new TestCaseIdEntry(testCaseId.value());
+	private static final java.util.function.Function<List<Argument>, List<?>> ARGUMENTS_TRANSFORM = arguments -> ofNullable(arguments).map(
+			args -> args.stream().map(Argument::getValue).collect(Collectors.toList())).orElse(null);
+
+	@SuppressWarnings("unchecked")
+	public static TestCaseIdEntry getTestCaseId(TestStep testStep, String codeRef) {
+		Field definitionMatchField = getDefinitionMatchField(testStep);
+		List<Argument> arguments = ((PickleStepTestStep) testStep).getDefinitionArgument();
+		if (definitionMatchField != null) {
+			try {
+				Method method = retrieveMethod(definitionMatchField, testStep);
+				return TestCaseIdUtils.getTestCaseId(method.getAnnotation(TestCaseId.class),
+						method,
+						codeRef,
+						(List<Object>) ARGUMENTS_TRANSFORM.apply(arguments)
+				);
+			} catch (NoSuchFieldException | IllegalAccessException ignore) {
+			}
 		}
+		return getTestCaseId(codeRef, arguments);
 	}
 
+	@SuppressWarnings("unchecked")
 	private static TestCaseIdEntry getTestCaseId(String codeRef, List<Argument> arguments) {
-		return ofNullable(arguments).filter(args -> !args.isEmpty())
-				.map(args -> new TestCaseIdEntry(codeRef + TRANSFORM_PARAMETERS.apply(args)))
-				.orElseGet(() -> new TestCaseIdEntry(codeRef));
+		return TestCaseIdUtils.getTestCaseId(codeRef, (List<Object>) ARGUMENTS_TRANSFORM.apply(arguments));
 	}
-
-	private static final Function<List<Argument>, String> TRANSFORM_PARAMETERS = it -> it.stream()
-			.map(Argument::getValue)
-			.collect(Collectors.joining(",", "[", "]"));
 
 	private static Field getDefinitionMatchField(TestStep testStep) {
 		Class<?> clazz = testStep.getClass();
@@ -379,5 +372,15 @@ public class Utils {
 
 			return null;
 		}
+	}
+
+	@Nonnull
+	public static String getDescription(@Nonnull URI uri) {
+		return uri.toString();
+	}
+
+	@Nonnull
+	public static String getCodeRef(@Nonnull URI uri, int line) {
+		return uri + ":" + line;
 	}
 }

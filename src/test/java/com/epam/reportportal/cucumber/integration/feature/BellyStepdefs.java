@@ -9,7 +9,8 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 
 public class BellyStepdefs {
 
@@ -31,6 +32,6 @@ public class BellyStepdefs {
 	@Attributes(multiValueAttributes = { @MultiValueAttribute(isNullKey = true, values = { "v1", "v2" }) })
 	@Then("^my belly should growl$")
 	public void my_belly_should_growl() {
-		assertTrue(belly.growl());
+		assertThat(belly.growl(), equalTo(Boolean.TRUE));
 	}
 }

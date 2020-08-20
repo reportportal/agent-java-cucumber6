@@ -47,7 +47,7 @@ class RunningContext {
 	}
 
 	static class FeatureContext {
-		private static final Map<URI, TestSourceRead> PATH_TO_READ_EVENT_MAP = new HashMap<>();
+		private static final Map<URI, TestSourceRead> PATH_TO_READ_EVENT_MAP = new ConcurrentHashMap<>();
 		private URI currentFeatureUri;
 		private Maybe<String> currentFeatureId;
 		private Messages.GherkinDocument.Feature currentFeature;
