@@ -324,7 +324,7 @@ public class Utils {
 		Field stepDefinitionField = stepDefinitionMatch.getClass().getDeclaredField(STEP_DEFINITION_FIELD_NAME);
 		stepDefinitionField.setAccessible(true);
 		Object javaStepDefinition = stepDefinitionField.get(stepDefinitionMatch);
-		Field methodField = javaStepDefinition.getClass().getDeclaredField(METHOD_FIELD_NAME);
+		Field methodField = javaStepDefinition.getClass().getSuperclass().getDeclaredField(METHOD_FIELD_NAME);
 		methodField.setAccessible(true);
 		return (Method) methodField.get(javaStepDefinition);
 	}

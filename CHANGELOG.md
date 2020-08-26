@@ -3,6 +3,7 @@
 ## [Unreleased]
 ### Fixed
 - Incorrect item type settings
+- Attribute reporting
 ### Added
 - Nested steps support
 
