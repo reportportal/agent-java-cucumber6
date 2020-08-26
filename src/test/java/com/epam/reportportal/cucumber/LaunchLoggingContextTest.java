@@ -5,6 +5,7 @@ import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+
 import static org.mockito.Mockito.*;
 
 /**

@@ -47,7 +47,7 @@ publishing {
 }
 
 dependencies {
-    api 'com.epam.reportportal:client-java:5.0.6'
+    api 'com.epam.reportportal:client-java:5.0.7'
     api 'com.epam.reportportal:commons-model:5.0.0'
     api 'com.google.code.findbugs:jsr305:3.0.2'
 
@@ -55,9 +55,10 @@ dependencies {
 
     testImplementation('com.github.reportportal:agent-java-test-utils:ddcf50ee20')
 
+    testImplementation 'io.cucumber:cucumber-testng:6.0.0'
+    testImplementation 'org.aspectj:aspectjweaver:1.9.2'
     testImplementation 'org.hamcrest:hamcrest-core:2.2'
     testImplementation 'org.mockito:mockito-core:3.3.3'
-    testImplementation 'io.cucumber:cucumber-testng:6.0.0'
     testImplementation 'ch.qos.logback:logback-classic:1.2.3'
     testImplementation 'com.epam.reportportal:logger-java-logback:5.0.3'
     testImplementation ('org.junit.platform:junit-platform-runner:1.6.2') {
@@ -71,7 +72,13 @@ dependencies {
 }
 
 test {
+    outputs.upToDateWhen { return false }
     useJUnitPlatform()
+    maxParallelForks(5) // it's forks - separate JVMs, should not interfere each other
+    doFirst {
+        def weaver = configurations.testRuntimeClasspath.find { it.name.contains("aspectjweaver") }
+        jvmArgs += "-javaagent:$weaver"
+    }
 }
 
 wrapper {
