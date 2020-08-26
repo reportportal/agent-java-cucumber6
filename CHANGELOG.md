@@ -4,6 +4,7 @@
 ### Fixed
 - Incorrect item type settings
 - Attribute reporting
+- Test case id annotation on a step definition method reading
 ### Added
 - Nested steps support
 
