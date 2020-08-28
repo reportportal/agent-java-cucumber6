@@ -1,6 +1,12 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- Incorrect item type settings
+- Attribute reporting
+- Test case id annotation on a step definition method reading
+### Added
+- Nested steps support
 
 ## [0.0.2-ALPHA]
 ### Added

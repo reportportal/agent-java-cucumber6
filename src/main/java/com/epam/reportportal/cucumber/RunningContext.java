@@ -21,10 +21,7 @@ import io.cucumber.gherkin.Parser;
 import io.cucumber.gherkin.TokenMatcher;
 import io.cucumber.messages.IdGenerator;
 import io.cucumber.messages.Messages;
-import io.cucumber.plugin.event.PickleStepTestStep;
-import io.cucumber.plugin.event.TestCase;
-import io.cucumber.plugin.event.TestSourceRead;
-import io.cucumber.plugin.event.TestStep;
+import io.cucumber.plugin.event.*;
 import io.reactivex.Maybe;
 
 import java.net.URI;
@@ -140,7 +137,11 @@ class RunningContext {
 
 	static class ScenarioContext {
 		private static final Map<Messages.GherkinDocument.Feature.Scenario, List<Integer>> scenarioOutlineMap = new ConcurrentHashMap<>();
-		private Maybe<String> id = null;
+
+		private Maybe<String> currentStepId;
+		private Maybe<String> hookStepId;
+		private Status hookStatus;
+		private Maybe<String> id;
 		private Messages.GherkinDocument.Feature.Background background;
 		private Messages.GherkinDocument.Feature.Scenario scenario;
 		private final Queue<Messages.GherkinDocument.Feature.Step> backgroundSteps;
@@ -271,6 +272,30 @@ class RunningContext {
 
 		String getOutlineIteration() {
 			return outlineIteration;
+		}
+
+		public Maybe<String> getCurrentStepId() {
+			return currentStepId;
+		}
+
+		public void setCurrentStepId(Maybe<String> currentStepId) {
+			this.currentStepId = currentStepId;
+		}
+
+		public Maybe<String> getHookStepId() {
+			return hookStepId;
+		}
+
+		public void setHookStepId(Maybe<String> hookStepId) {
+			this.hookStepId = hookStepId;
+		}
+
+		public Status getHookStatus() {
+			return hookStatus;
+		}
+
+		public void setHookStatus(Status hookStatus) {
+			this.hookStatus = hookStatus;
 		}
 	}
 }

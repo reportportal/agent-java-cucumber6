@@ -134,8 +134,10 @@ public class CodeRefTest {
 				.forEach(i -> assertThat(steps.get(i).getCodeRef(), allOf(notNullValue(), equalTo(STEP_CODE_REFERENCE.get(i)))));
 	}
 
-	private static final List<Pair<String, String>> TWO_FEATURES_CODE_REFERENCES = Arrays.asList(
-			Pair.of("file:///", "/agent-java-cucumber6/src/test/resources/features/TwoScenarioInOne.feature:3"),
+	private static final List<Pair<String, String>> TWO_FEATURES_CODE_REFERENCES = Arrays.asList(Pair.of(
+			"file:///",
+			"/agent-java-cucumber6/src/test/resources/features/TwoScenarioInOne.feature:3"
+			),
 			Pair.of("file:///", "/agent-java-cucumber6/src/test/resources/features/TwoScenarioInOne.feature:7")
 	);
 

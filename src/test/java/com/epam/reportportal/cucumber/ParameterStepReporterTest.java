@@ -27,12 +27,13 @@ import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
 
 /**
  * @author <a href="mailto:ihar_kahadouski@epam.com">Ihar Kahadouski</a>
  */
-public class ParameterTest {
+public class ParameterStepReporterTest {
 
 	@CucumberOptions(features = "src/test/resources/features/BasicScenarioOutlineParameters.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
@@ -55,8 +56,8 @@ public class ParameterTest {
 			.map(id -> Pair.of(id, Stream.generate(() -> CommonUtils.namedId("step_")).limit(3).collect(Collectors.toList())))
 			.collect(Collectors.toList());
 
-	private final ListenerParameters parameters = TestUtils.standardParameters();
 	private final ReportPortalClient client = mock(ReportPortalClient.class);
+	private final ListenerParameters parameters = TestUtils.standardParameters();
 	private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 	private final ReportPortal reportPortal = ReportPortal.create(client, parameters, executorService);
 
@@ -68,9 +69,21 @@ public class ParameterTest {
 	}
 
 	public static final List<Pair<String, Object>> PARAMETERS = Arrays.asList(
-			Pair.of("str", "first"), Pair.of("parameters", 123),
-			Pair.of("str", "second"), Pair.of("parameters", 12345),
-			Pair.of("str", "third"), Pair.of("parameters", 12345678)
+			Pair.of("str", "first"),
+			Pair.of("parameters", 123),
+			Pair.of("str", "second"),
+			Pair.of("parameters", 12345),
+			Pair.of("str", "third"),
+			Pair.of("parameters", 12345678)
+	);
+
+	public static final List<String> STEP_NAMES = Arrays.asList(
+			String.format("When I have parameter \"%s\"", PARAMETERS.get(0).getValue()),
+			String.format("Then I emit number %s on level info", PARAMETERS.get(1).getValue().toString()),
+			String.format("When I have parameter \"%s\"", PARAMETERS.get(2).getValue()),
+			String.format("Then I emit number %s on level info", PARAMETERS.get(3).getValue().toString()),
+			String.format("When I have parameter \"%s\"", PARAMETERS.get(4).getValue()),
+			String.format("Then I emit number %s on level info", PARAMETERS.get(5).getValue().toString())
 	);
 
 	@Test
@@ -85,12 +98,15 @@ public class ParameterTest {
 		verify(client, times(3)).startTestItem(same(testIds.get(2)), captor.capture());
 
 		List<StartTestItemRQ> items = captor.getAllValues();
-		List<StartTestItemRQ> filteredItems = IntStream.range(0, items.size())
-				.filter(i -> i % 3 != 0)
-				.mapToObj(items::get)
+		List<StartTestItemRQ> filteredItems = items.stream()
+				.filter(i -> "STEP".equals(i.getType()) && !i.getName().startsWith("Given"))
 				.collect(Collectors.toList());
 		IntStream.range(0, filteredItems.size()).mapToObj(i -> Pair.of(i, filteredItems.get(i))).forEach(e -> {
-			assertThat(e.getValue().getParameters(), allOf(notNullValue(), hasSize(1)));
+			StartTestItemRQ step = e.getValue();
+			assertThat(step, notNullValue());
+			String expectedName = STEP_NAMES.get(e.getKey());
+			assertThat(step.getName(), equalTo(expectedName));
+			assertThat(step.getParameters(), allOf(notNullValue(), hasSize(1)));
 			ParameterResource param = e.getValue().getParameters().get(0);
 			Pair<String, Object> expectedParam = PARAMETERS.get(e.getKey());
 
@@ -111,13 +127,11 @@ public class ParameterTest {
 		verify(client, times(3)).startTestItem(same(testIds.get(2)), captor.capture());
 
 		List<StartTestItemRQ> items = captor.getAllValues();
-		List<StartTestItemRQ> twoParameterItems = IntStream.range(0, items.size())
-				.filter(i -> i % 3 == 0)
-				.mapToObj(items::get)
+		List<StartTestItemRQ> twoParameterItems = items.stream()
+				.filter(i -> "STEP".equals(i.getType()) && i.getName().startsWith("Given"))
 				.collect(Collectors.toList());
-		List<StartTestItemRQ> oneParameterItems = IntStream.range(0, items.size())
-				.filter(i -> i % 3 == 2)
-				.mapToObj(items::get)
+		List<StartTestItemRQ> oneParameterItems = items.stream()
+				.filter(i -> "STEP".equals(i.getType()) && i.getName().startsWith("Then"))
 				.collect(Collectors.toList());
 		twoParameterItems.forEach(i -> assertThat(i.getParameters(), allOf(notNullValue(), hasSize(2))));
 		oneParameterItems.forEach(i -> assertThat(i.getParameters(), allOf(notNullValue(), hasSize(1))));
