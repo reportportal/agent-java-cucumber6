@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.0.0-BETA-1]
 ### Fixed
 - Incorrect item type settings
 - Attribute reporting
