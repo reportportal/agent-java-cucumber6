@@ -48,121 +48,105 @@ import java.util.Calendar;
  * @author Vitaliy Tsvihun
  */
 public class ScenarioReporter extends AbstractReporter {
-    private static final String SEPARATOR = " --- ";
-    private static final String RP_STORY_TYPE = "SUITE";
-    private static final String RP_TEST_TYPE = "STORY";
-    private static final String RP_STEP_TYPE = "STEP";
-    private static final String HOOK_COLON = "Hook:";
-    private static final String COLON_ = ": ";
-    private static final String STEP_ = "STEP ";
-    private static final String EMPTY_SUFFIX = "";
-    private static final String INFO = "INFO";
-    private static final String DUMMY_ROOT_SUITE_NAME = "Root User Story";
+	private static final String RP_STORY_TYPE = "SUITE";
+	private static final String RP_TEST_TYPE = "STORY";
+	private static final String RP_STEP_TYPE = "STEP";
+	private static final String DUMMY_ROOT_SUITE_NAME = "Root User Story";
 
-    protected Supplier<Maybe<String>> rootSuiteId;
+	protected Supplier<Maybe<String>> rootSuiteId;
 
-    @Override
-    protected void beforeLaunch() {
-        super.beforeLaunch();
-        startRootItem();
-    }
+	@Override
+	protected void beforeLaunch() {
+		super.beforeLaunch();
+		startRootItem();
+	}
 
-    @Override
-    protected void beforeStep(TestStep testStep) {
-        RunningContext.ScenarioContext context = getCurrentScenarioContext();
-        Messages.GherkinDocument.Feature.Step step = context.getStep(testStep);
-        StartTestItemRQ rq = Utils.buildStartStepRequest(context.getStepPrefix(), testStep, step, false);
-        context.setCurrentStepId(launch.get().startTestItem(context.getId(), rq));
-    }
+	@Override
+	protected void beforeStep(TestStep testStep) {
+		RunningContext.ScenarioContext context = getCurrentScenarioContext();
+		Messages.GherkinDocument.Feature.Step step = context.getStep(testStep);
+		StartTestItemRQ rq = Utils.buildStartStepRequest(context.getStepPrefix(), testStep, step, false);
+		context.setCurrentStepId(launch.get().startTestItem(context.getId(), rq));
+	}
 
-    @Override
-    protected void afterStep(Result result) {
-        reportResult(result, null);
-        RunningContext.ScenarioContext context = getCurrentScenarioContext();
-        Launch myLaunch = launch.get();
-        Utils.finishTestItem(myLaunch, context.getCurrentStepId(), result.getStatus());
-        context.setCurrentStepId(null);
-        myLaunch.getStepReporter().finishPreviousStep();
-    }
+	@Override
+	protected void afterStep(Result result) {
+		reportResult(result, null);
+		RunningContext.ScenarioContext context = getCurrentScenarioContext();
+		Launch myLaunch = launch.get();
+		Utils.finishTestItem(myLaunch, context.getCurrentStepId(), result.getStatus());
+		context.setCurrentStepId(null);
+		myLaunch.getStepReporter().finishPreviousStep();
+	}
 
-    @Override
-    protected void beforeHooks(HookType hookType) {
-        StartTestItemRQ rq = new StartTestItemRQ();
-        rq.setHasStats(false);
-        Pair<String, String> typeName = Utils.getHookTypeAndName(hookType);
-        rq.setType(typeName.getKey());
-        rq.setName(typeName.getValue());
-        rq.setStartTime(Calendar.getInstance().getTime());
+	@Override
+	protected void beforeHooks(HookType hookType) {
+		StartTestItemRQ rq = new StartTestItemRQ();
+		rq.setHasStats(false);
+		Pair<String, String> typeName = Utils.getHookTypeAndName(hookType);
+		rq.setType(typeName.getKey());
+		rq.setName(typeName.getValue());
+		rq.setStartTime(Calendar.getInstance().getTime());
 
-        RunningContext.ScenarioContext context = getCurrentScenarioContext();
-        context.setHookStepId(launch.get().startTestItem(getCurrentScenarioContext().getId(), rq));
-        context.setHookStatus(Status.PASSED);
-    }
+		RunningContext.ScenarioContext context = getCurrentScenarioContext();
+		context.setHookStepId(launch.get().startTestItem(getCurrentScenarioContext().getId(), rq));
+		context.setHookStatus(Status.PASSED);
+	}
 
-    @Override
-    protected void afterHooks(Boolean isBefore) {
-        RunningContext.ScenarioContext context = getCurrentScenarioContext();
-        Launch myLaunch = launch.get();
-        Utils.finishTestItem(myLaunch, context.getHookStepId(), context.getHookStatus());
-        context.setHookStepId(null);
-        myLaunch.getStepReporter().finishPreviousStep();
-    }
+	@Override
+	protected void afterHooks(Boolean isBefore) {
+		RunningContext.ScenarioContext context = getCurrentScenarioContext();
+		Launch myLaunch = launch.get();
+		Utils.finishTestItem(myLaunch, context.getHookStepId(), context.getHookStatus());
+		context.setHookStepId(null);
+		myLaunch.getStepReporter().finishPreviousStep();
+	}
 
-    @Override
-    protected void hookFinished(HookTestStep step, Result result, Boolean isBefore) {
-        reportResult(result, (isBefore ? "Before" : "After") + " hook: " + step.getCodeLocation());
-        getCurrentScenarioContext().setHookStatus(result.getStatus());
-    }
+	@Override
+	protected void hookFinished(HookTestStep step, Result result, Boolean isBefore) {
+		reportResult(result, (isBefore ? "Before" : "After") + " hook: " + step.getCodeLocation());
+		getCurrentScenarioContext().setHookStatus(result.getStatus());
+	}
 
-    @Override
-    protected String getFeatureTestItemType() {
-        return RP_TEST_TYPE;
-    }
+	@Override
+	protected String getFeatureTestItemType() {
+		return RP_TEST_TYPE;
+	}
 
-    @Override
-    protected String getScenarioTestItemType() {
-        return RP_STEP_TYPE;
-    }
+	@Override
+	protected String getScenarioTestItemType() {
+		return RP_STEP_TYPE;
+	}
 
-    @Override
-    protected Maybe<String> getRootItemId() {
-        return rootSuiteId.get();
-    }
+	@Override
+	protected Maybe<String> getRootItemId() {
+		return rootSuiteId.get();
+	}
 
-    @Override
-    protected void afterLaunch() {
-        finishRootItem();
-        super.afterLaunch();
-    }
+	@Override
+	protected void afterLaunch() {
+		finishRootItem();
+		super.afterLaunch();
+	}
 
-    /**
-     * Finish root suite
-     */
-    protected void finishRootItem() {
-        Utils.finishTestItem(launch.get(), rootSuiteId.get());
-        rootSuiteId = null;
-    }
+	/**
+	 * Finish root suite
+	 */
+	protected void finishRootItem() {
+		Utils.finishTestItem(launch.get(), rootSuiteId.get());
+		rootSuiteId = null;
+	}
 
-    /**
-     * Start root suite
-     */
-    protected void startRootItem() {
-        rootSuiteId = Suppliers.memoize(() -> {
-            StartTestItemRQ rq = new StartTestItemRQ();
-            rq.setName(DUMMY_ROOT_SUITE_NAME);
-            rq.setStartTime(Calendar.getInstance().getTime());
-            rq.setType(RP_STORY_TYPE);
-            return launch.get().startTestItem(rq);
-        });
-    }
-
-    /**
-     * Add separators to log item to distinguish from real log messages
-     *
-     * @param message to decorate
-     * @return decorated message
-     */
-    protected String decorateMessage(String message) {
-        return SEPARATOR + message;
-    }
+	/**
+	 * Start root suite
+	 */
+	protected void startRootItem() {
+		rootSuiteId = Suppliers.memoize(() -> {
+			StartTestItemRQ rq = new StartTestItemRQ();
+			rq.setName(DUMMY_ROOT_SUITE_NAME);
+			rq.setStartTime(Calendar.getInstance().getTime());
+			rq.setType(RP_STORY_TYPE);
+			return launch.get().startTestItem(rq);
+		});
+	}
 }
