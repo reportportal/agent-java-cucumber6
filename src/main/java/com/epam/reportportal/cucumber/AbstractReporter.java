@@ -290,21 +290,19 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 
 	protected abstract Maybe<String> getRootItemId();
 
-	private RunningContext.FeatureContext createFeatureContext(TestCase testCase) {
-		RunningContext.FeatureContext currentFeatureContext;
-		currentFeatureContext = new RunningContext.FeatureContext().processTestSourceReadEvent(testCase);
-		String featureKeyword = currentFeatureContext.getFeature().getKeyword();
-		String featureName = currentFeatureContext.getFeature().getName();
+	private RunningContext.FeatureContext startFeatureContext(RunningContext.FeatureContext context) {
+		String featureKeyword = context.getFeature().getKeyword();
+		String featureName = context.getFeature().getName();
 		StartTestItemRQ rq = new StartTestItemRQ();
 		Maybe<String> root = getRootItemId();
-		rq.setDescription(getDescription(currentFeatureContext.getUri()));
-		rq.setCodeRef(getCodeRef(currentFeatureContext.getUri(), 0));
+		rq.setDescription(getDescription(context.getUri()));
+		rq.setCodeRef(getCodeRef(context.getUri(), 0));
 		rq.setName(Utils.buildNodeName(featureKeyword, AbstractReporter.COLON_INFIX, featureName, null));
-		rq.setAttributes(currentFeatureContext.getAttributes());
+		rq.setAttributes(context.getAttributes());
 		rq.setStartTime(Calendar.getInstance().getTime());
 		rq.setType(getFeatureTestItemType());
-		currentFeatureContext.setFeatureId(root == null ? launch.get().startTestItem(rq) : launch.get().startTestItem(root, rq));
-		return currentFeatureContext;
+		context.setFeatureId(root == null ? launch.get().startTestItem(rq) : launch.get().startTestItem(root, rq));
+		return context;
 	}
 
 	/**
@@ -360,33 +358,34 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 
 	protected void handleStartOfTestCase(TestCaseStarted event) {
 		TestCase testCase = event.getTestCase();
-		RunningContext.FeatureContext featureContext = new RunningContext.FeatureContext().processTestSourceReadEvent(testCase);
-		URI featureUri = featureContext.getUri();
-		RunningContext.FeatureContext currentFeatureContext = currentFeatureContextMap.computeIfAbsent(featureUri,
-				u -> createFeatureContext(testCase)
+		RunningContext.FeatureContext newFeatureContext = new RunningContext.FeatureContext(testCase);
+		URI featureUri = newFeatureContext.getUri();
+		RunningContext.FeatureContext featureContext = currentFeatureContextMap.computeIfAbsent(
+				featureUri,
+				u -> startFeatureContext(newFeatureContext)
 		);
 
-		if (!currentFeatureContext.getUri().equals(testCase.getUri())) {
+		if (!featureContext.getUri().equals(testCase.getUri())) {
 			throw new IllegalStateException("Scenario URI does not match Feature URI.");
 		}
 
-		RunningContext.ScenarioContext scenarioContext = currentFeatureContext.getScenarioContext(testCase);
-		String scenarioName = Utils.buildNodeName(scenarioContext.getKeyword(),
+		RunningContext.ScenarioContext newScenarioContext = featureContext.getScenarioContext(testCase);
+		String scenarioName = Utils.buildNodeName(newScenarioContext.getKeyword(),
 				AbstractReporter.COLON_INFIX,
-				scenarioContext.getName(),
-				scenarioContext.getOutlineIteration()
+				newScenarioContext.getName(),
+				newScenarioContext.getOutlineIteration()
 		);
 
-		Pair<String, URI> scenarioNameFeatureURI = Pair.of(testCase.getScenarioDesignation(), currentFeatureContext.getUri());
-		RunningContext.ScenarioContext context = currentScenarioContextMap.get(scenarioNameFeatureURI);
+		Pair<String, URI> scenarioNameFeatureURI = Pair.of(testCase.getScenarioDesignation(), featureContext.getUri());
+		RunningContext.ScenarioContext scenarioContext = currentScenarioContextMap.get(scenarioNameFeatureURI);
 
-		if (context == null) {
-			context = currentFeatureContext.getScenarioContext(testCase);
-			currentScenarioContextMap.put(scenarioNameFeatureURI, context);
-			currentScenarioContext.set(context);
+		if (scenarioContext == null) {
+			scenarioContext = newScenarioContext;
+			currentScenarioContextMap.put(scenarioNameFeatureURI, scenarioContext);
+			currentScenarioContext.set(scenarioContext);
 		}
 
-		beforeScenario(currentFeatureContext, context, scenarioName);
+		beforeScenario(featureContext, scenarioContext, scenarioName);
 	}
 
 	protected void handleTestStepStarted(TestStepStarted event) {
