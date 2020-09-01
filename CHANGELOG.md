@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- CodeRef is now relative
 
 ## [5.0.0-BETA-1]
 ### Fixed

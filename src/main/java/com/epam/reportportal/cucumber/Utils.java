@@ -38,6 +38,7 @@ import rp.com.google.common.collect.Lists;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -64,6 +65,7 @@ public class Utils {
 	private static final String ONE_SPACE = " ";
 	private static final String HOOK_ = "Hook: ";
 	private static final String NEW_LINE = "\r\n";
+	private static final URI WORKING_DIRECTORY = new File(System.getProperty("user.dir")).toURI();
 
 	private static final String DEFINITION_MATCH_FIELD_NAME = "definitionMatch";
 	private static final String STEP_DEFINITION_FIELD_NAME = "stepDefinition";
@@ -292,6 +294,11 @@ public class Utils {
 		}
 	}
 
+	@Nonnull
+	public static String getCodeRef(@Nonnull URI uri, int line) {
+		return WORKING_DIRECTORY.relativize(uri) + ":" + line;
+	}
+
 	static List<ParameterResource> getParameters(List<Argument> arguments, String text) {
 		List<ParameterResource> parameters = Lists.newArrayList();
 		ArrayList<String> parameterNames = Lists.newArrayList();
@@ -378,11 +385,6 @@ public class Utils {
 	@Nonnull
 	public static String getDescription(@Nonnull URI uri) {
 		return uri.toString();
-	}
-
-	@Nonnull
-	public static String getCodeRef(@Nonnull URI uri, int line) {
-		return uri + ":" + line;
 	}
 
 	public static Pair<String, String> getHookTypeAndName(HookType hookType) {
