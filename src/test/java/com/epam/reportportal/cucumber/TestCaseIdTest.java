@@ -23,10 +23,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.startsWith;
-import static org.hamcrest.Matchers.*;
-import static org.mockito.Mockito.any;
+import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Mockito.*;
 
 public class TestCaseIdTest {
@@ -84,7 +81,7 @@ public class TestCaseIdTest {
 		verify(client, times(1)).startTestItem(same(testId), captor.capture());
 
 		StartTestItemRQ rq = captor.getValue();
-		assertThat(rq.getTestCaseId(), allOf(startsWith("file:///"), endsWith("src/test/resources/features/belly.feature:4")));
+		assertThat(rq.getTestCaseId(), equalTo("src/test/resources/features/belly.feature:4"));
 	}
 
 	@Test
