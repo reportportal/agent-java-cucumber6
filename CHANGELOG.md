@@ -3,6 +3,7 @@
 ## [Unreleased]
 ### Changed
 - CodeRef is now relative
+- Test step parameters handling
 
 ## [5.0.0-BETA-1]
 ### Fixed

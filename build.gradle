@@ -52,6 +52,7 @@ dependencies {
     api 'com.google.code.findbugs:jsr305:3.0.2'
 
     implementation 'io.cucumber:cucumber-java:6.0.0'
+    implementation 'io.github.java-diff-utils:java-diff-utils:4.7'
 
     testImplementation('com.github.reportportal:agent-java-test-utils:ddcf50ee20')
 

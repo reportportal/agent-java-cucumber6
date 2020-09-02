@@ -22,6 +22,7 @@ import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
 import com.epam.reportportal.utils.AttributeParser;
+import com.epam.reportportal.utils.ParameterUtils;
 import com.epam.reportportal.utils.TestCaseIdUtils;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.ParameterResource;
@@ -34,7 +35,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rp.com.google.common.collect.ImmutableMap;
-import rp.com.google.common.collect.Lists;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -44,10 +44,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static java.util.Optional.ofNullable;
 
@@ -72,7 +69,6 @@ public class Utils {
 	private static final String GET_LOCATION_METHOD_NAME = "getLocation";
 	private static final String METHOD_OPENING_BRACKET = "(";
 	private static final String METHOD_FIELD_NAME = "method";
-	private static final String PARAMETER_REGEX = "<[^<>]+>";
 
 	private Utils() {
 		throw new AssertionError("No instances should exist for the class!");
@@ -299,30 +295,33 @@ public class Utils {
 		return WORKING_DIRECTORY.relativize(uri) + ":" + line;
 	}
 
-	static List<ParameterResource> getParameters(List<Argument> arguments, String text) {
-		List<ParameterResource> parameters = Lists.newArrayList();
-		ArrayList<String> parameterNames = Lists.newArrayList();
-		Matcher matcher = Pattern.compile(PARAMETER_REGEX).matcher(text);
-		while (matcher.find()) {
-			parameterNames.add(text.substring(matcher.start() + 1, matcher.end() - 1));
+	static List<ParameterResource> getParameters(@Nonnull List<Argument> arguments) {
+		return arguments.stream().map(a -> {
+			ParameterResource p = new ParameterResource();
+			p.setKey(a.getParameterTypeName());
+			p.setValue(a.getValue());
+			return p;
+		}).collect(Collectors.toList());
+	}
+
+	static List<ParameterResource> getParameters(@Nonnull String codeRef, @Nonnull List<Argument> arguments) {
+		int lastDelimiterIndex = codeRef.lastIndexOf('.');
+		String className = codeRef.substring(0, lastDelimiterIndex);
+		String methodName = codeRef.substring(lastDelimiterIndex + 1);
+
+		Optional<Class<?>> testStepClass;
+		try {
+			testStepClass = Optional.of(Class.forName(className));
+		} catch (ClassNotFoundException e) {
+			testStepClass = Optional.empty();
 		}
-		IntStream.range(0, parameterNames.size()).forEach(index -> {
-			String parameterName = parameterNames.get(index);
-			if (index < arguments.size()) {
-				Argument argument = arguments.get(index);
-				String parameterValue = argument.getValue();
-				ParameterResource parameterResource = new ParameterResource();
-				parameterResource.setKey(parameterName);
-				if ("string".equals(argument.getParameterTypeName())) {
-					parameterResource.setValue(parameterValue.trim()
-							.substring(1, parameterValue.length() - 1)); // strip mandatory string quotes
-				} else {
-					parameterResource.setValue(parameterValue);
-				}
-				parameters.add(parameterResource);
-			}
-		});
-		return parameters;
+
+		return testStepClass.flatMap(c -> Arrays.stream(c.getDeclaredMethods())
+				.filter(m -> methodName.equals(m.getName()))
+				.filter(m -> m.getParameterCount() == arguments.size())
+				.findAny())
+				.map(m -> ParameterUtils.getParameters(m, arguments.stream().map(Argument::getValue).collect(Collectors.toList())))
+				.orElse(getParameters(arguments));
 	}
 
 	private static Method retrieveMethod(Field definitionMatchField, TestStep testStep)
@@ -420,10 +419,17 @@ public class Utils {
 		rq.setStartTime(Calendar.getInstance().getTime());
 		rq.setType("STEP");
 		String codeRef = Utils.getCodeRef(testStep);
-		List<Argument> arguments = testStep instanceof PickleStepTestStep ?
-				((PickleStepTestStep) testStep).getDefinitionArgument() :
-				Collections.emptyList();
-		rq.setParameters(Utils.getParameters(arguments, step.getText()));
+		if (testStep instanceof PickleStepTestStep) {
+			PickleStepTestStep pickleStepTestStep = (PickleStepTestStep) testStep;
+			List<Argument> arguments = pickleStepTestStep.getDefinitionArgument();
+			if (arguments != null) {
+				if (codeRef != null) {
+					rq.setParameters(Utils.getParameters(codeRef, arguments));
+				} else {
+					rq.setParameters(getParameters(arguments));
+				}
+			}
+		}
 		rq.setCodeRef(codeRef);
 		rq.setTestCaseId(ofNullable(Utils.getTestCaseId(testStep, codeRef)).map(TestCaseIdEntry::getId).orElse(null));
 		rq.setAttributes(Utils.getAttributes(testStep));
