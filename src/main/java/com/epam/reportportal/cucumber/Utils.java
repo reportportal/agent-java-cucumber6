@@ -295,33 +295,12 @@ public class Utils {
 		return WORKING_DIRECTORY.relativize(uri) + ":" + line;
 	}
 
-	static List<ParameterResource> getParameters(@Nonnull List<Argument> arguments) {
-		return arguments.stream().map(a -> {
-			ParameterResource p = new ParameterResource();
-			p.setKey(a.getParameterTypeName());
-			p.setValue(a.getValue());
-			return p;
-		}).collect(Collectors.toList());
-	}
-
-	static List<ParameterResource> getParameters(@Nonnull String codeRef, @Nonnull List<Argument> arguments) {
-		int lastDelimiterIndex = codeRef.lastIndexOf('.');
-		String className = codeRef.substring(0, lastDelimiterIndex);
-		String methodName = codeRef.substring(lastDelimiterIndex + 1);
-
-		Optional<Class<?>> testStepClass;
-		try {
-			testStepClass = Optional.of(Class.forName(className));
-		} catch (ClassNotFoundException e) {
-			testStepClass = Optional.empty();
-		}
-
-		return testStepClass.flatMap(c -> Arrays.stream(c.getDeclaredMethods())
-				.filter(m -> methodName.equals(m.getName()))
-				.filter(m -> m.getParameterCount() == arguments.size())
-				.findAny())
-				.map(m -> ParameterUtils.getParameters(m, arguments.stream().map(Argument::getValue).collect(Collectors.toList())))
-				.orElse(getParameters(arguments));
+	@Nonnull
+	static List<ParameterResource> getParameters(@Nullable String codeRef, @Nullable List<Argument> arguments) {
+		List<Pair<String, String>> params = ofNullable(arguments).map(a -> a.stream()
+				.map(arg -> Pair.of(arg.getParameterTypeName(), arg.getValue()))
+				.collect(Collectors.toList())).orElse(null);
+		return ParameterUtils.getParameters(codeRef, params);
 	}
 
 	private static Method retrieveMethod(Field definitionMatchField, TestStep testStep)
@@ -422,13 +401,7 @@ public class Utils {
 		if (testStep instanceof PickleStepTestStep) {
 			PickleStepTestStep pickleStepTestStep = (PickleStepTestStep) testStep;
 			List<Argument> arguments = pickleStepTestStep.getDefinitionArgument();
-			if (arguments != null) {
-				if (codeRef != null) {
-					rq.setParameters(Utils.getParameters(codeRef, arguments));
-				} else {
-					rq.setParameters(getParameters(arguments));
-				}
-			}
+			rq.setParameters(Utils.getParameters(codeRef, arguments));
 		}
 		rq.setCodeRef(codeRef);
 		rq.setTestCaseId(ofNullable(Utils.getTestCaseId(testStep, codeRef)).map(TestCaseIdEntry::getId).orElse(null));
