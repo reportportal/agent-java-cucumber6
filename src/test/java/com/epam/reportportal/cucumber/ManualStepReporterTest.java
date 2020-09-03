@@ -225,7 +225,6 @@ public class ManualStepReporterTest {
 		assertThat(nestedStepFinishes.get(1).getStatus(), equalTo("PASSED"));
 		assertThat(nestedStepFinishes.get(2).getStatus(), equalTo("FAILED"));
 
-
 		List<FinishTestItemRQ> stepFinishes = IntStream.range(0, finishIds.size())
 				.filter(i -> !scenarioSecondNestedStepIds.contains(finishIds.get(i)))
 				.mapToObj(finishRqs::get)
