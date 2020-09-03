@@ -4,6 +4,8 @@
 ### Changed
 - CodeRef is now relative
 - Test step parameters handling
+### Fixed
+- Manually-reported nested steps now correctly fail all parents
 
 ## [5.0.0-BETA-1]
 ### Fixed

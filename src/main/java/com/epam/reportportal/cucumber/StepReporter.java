@@ -70,9 +70,9 @@ public class StepReporter extends AbstractReporter {
 		reportResult(result, null);
 		RunningContext.ScenarioContext context = getCurrentScenarioContext();
 		Launch myLaunch = launch.get();
+		myLaunch.getStepReporter().finishPreviousStep();
 		Utils.finishTestItem(myLaunch, context.getCurrentStepId(), result.getStatus());
 		context.setCurrentStepId(null);
-		myLaunch.getStepReporter().finishPreviousStep();
 	}
 
 	@Override
@@ -92,9 +92,9 @@ public class StepReporter extends AbstractReporter {
 	protected void afterHooks(Boolean isBefore) {
 		RunningContext.ScenarioContext context = getCurrentScenarioContext();
 		Launch myLaunch = launch.get();
+		myLaunch.getStepReporter().finishPreviousStep();
 		Utils.finishTestItem(myLaunch, context.getHookStepId(), context.getHookStatus());
 		context.setHookStepId(null);
-		myLaunch.getStepReporter().finishPreviousStep();
 	}
 
 	@Override
