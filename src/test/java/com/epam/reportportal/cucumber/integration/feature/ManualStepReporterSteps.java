@@ -38,7 +38,7 @@ public class ManualStepReporterSteps {
 		Thread.sleep(CommonUtils.MINIMAL_TEST_PAUSE);
 		LOGGER.info(SECOND_NESTED_STEP_LOG);
 
-		stepReporter.sendStep(ItemStatus.FAILED, THIRD_NAME, new File("pug/unlucky.jpg"));
+		stepReporter.sendStep(ItemStatus.FAILED, THIRD_NAME, new File("files/unlucky.jpg"));
 		Thread.sleep(CommonUtils.MINIMAL_TEST_PAUSE);
 		LOGGER.error(THIRD_NESTED_STEP_LOG);
 	}

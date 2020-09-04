@@ -28,10 +28,18 @@ import io.cucumber.plugin.ConcurrentEventListener;
 import io.cucumber.plugin.event.*;
 import io.reactivex.Maybe;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tika.Tika;
+import org.apache.tika.mime.MediaType;
+import org.apache.tika.mime.MimeTypeException;
+import org.apache.tika.mime.MimeTypes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rp.com.google.common.base.Supplier;
 import rp.com.google.common.base.Suppliers;
 import rp.com.google.common.io.ByteSource;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.util.Calendar;
 import java.util.Date;
@@ -53,6 +61,7 @@ import static rp.com.google.common.base.Throwables.getStackTraceAsString;
  * @author Vadzim Hushchanskou
  */
 public abstract class AbstractReporter implements ConcurrentEventListener {
+	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractReporter.class);
 
 	private static final String AGENT_PROPERTIES_FILE = "agent.properties";
 
@@ -273,11 +282,40 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		}
 	}
 
+	private static final ThreadLocal<Tika> TIKA_THREAD_LOCAL = ThreadLocal.withInitial(Tika::new);
+
+	private volatile MimeTypes mimeTypes = null;
+
+	private MimeTypes getMimeTypes() {
+		if (mimeTypes == null) {
+			mimeTypes = MimeTypes.getDefaultMimeTypes();
+		}
+		return mimeTypes;
+	}
+
+	/**
+	 * Send a log with data attached.
+	 *
+	 * @param mimeType an attachment type
+	 * @param data     data to attach
+	 */
 	protected void embedding(String mimeType, byte[] data) {
-		ReportPortal.emitLog(new ReportPortalMessage(ByteSource.wrap(data), mimeType, mimeType),
-				"UNKNOWN",
-				Calendar.getInstance().getTime()
-		);
+		String type = mimeType;
+		try {
+			type = TIKA_THREAD_LOCAL.get().detect(new ByteArrayInputStream(data));
+		} catch (IOException e) {
+			// nothing to do we will use bypassed mime type
+			LOGGER.warn("Mime-type not found", e);
+		}
+		String prefix = "";
+		try {
+
+			MediaType mt = getMimeTypes().forName(type).getType();
+			prefix = mt.getType();
+		} catch (MimeTypeException e) {
+			LOGGER.warn("Mime-type not found", e);
+		}
+		ReportPortal.emitLog(new ReportPortalMessage(ByteSource.wrap(data), type, prefix), "UNKNOWN", Calendar.getInstance().getTime());
 	}
 
 	protected void write(String text) {

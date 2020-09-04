@@ -4,6 +4,7 @@
 ### Changed
 - CodeRef is now relative
 - Test step parameters handling
+- Mime type processing for data embedding was improved
 ### Fixed
 - Manually-reported nested steps now correctly fail all parents
 
