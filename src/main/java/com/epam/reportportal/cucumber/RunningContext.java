@@ -39,11 +39,11 @@ import java.util.stream.IntStream;
  */
 class RunningContext {
 
-	private RunningContext() {
+	public RunningContext() {
 		throw new AssertionError("No instances should exist for the class!");
 	}
 
-	static class FeatureContext {
+	public static class FeatureContext {
 		private static final Map<URI, TestSourceRead> PATH_TO_READ_EVENT_MAP = new ConcurrentHashMap<>();
 		private final URI currentFeatureUri;
 		private final Messages.GherkinDocument.Feature currentFeature;
@@ -69,6 +69,7 @@ class RunningContext {
 			context.setTestCase(testCase);
 			context.processBackground(getBackground());
 			context.processScenarioOutline(scenario);
+			context.setFeatureUri(getUri());
 			return context;
 		}
 
@@ -130,7 +131,7 @@ class RunningContext {
 		}
 	}
 
-	static class ScenarioContext {
+	public static class ScenarioContext {
 		private static final Map<Messages.GherkinDocument.Feature.Scenario, List<Integer>> scenarioOutlineMap = new ConcurrentHashMap<>();
 
 		private Maybe<String> currentStepId;
@@ -146,6 +147,8 @@ class RunningContext {
 		private boolean hasBackground = false;
 		private String scenarioDesignation;
 		private String outlineIteration;
+		private URI uri;
+		private String text;
 
 		ScenarioContext() {
 			backgroundSteps = new ArrayDeque<>();
@@ -291,6 +294,22 @@ class RunningContext {
 
 		public void setHookStatus(Status hookStatus) {
 			this.hookStatus = hookStatus;
+		}
+
+		public void setFeatureUri(URI featureUri) {
+			this.uri = featureUri;
+		}
+
+		public URI getFeatureUri() {
+			return uri;
+		}
+
+		public void setCurrentText(String stepText) {
+			this.text = stepText;
+		}
+
+		public String getCurrentText() {
+			return text;
 		}
 	}
 }

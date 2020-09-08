@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- Callback reporting
 ### Changed
 - CodeRef is now relative
 - Test step parameters handling

@@ -62,7 +62,15 @@ public class StepReporter extends AbstractReporter {
 		RunningContext.ScenarioContext context = getCurrentScenarioContext();
 		Messages.GherkinDocument.Feature.Step step = context.getStep(testStep);
 		StartTestItemRQ rq = Utils.buildStartStepRequest(context.getStepPrefix(), testStep, step, true);
-		context.setCurrentStepId(launch.get().startTestItem(context.getId(), rq));
+		Launch myLaunch = launch.get();
+		Maybe<String> stepId = myLaunch.startTestItem(context.getId(), rq);
+		context.setCurrentStepId(stepId);
+		String stepText = step.getText();
+		context.setCurrentText(stepText);
+
+		if (myLaunch.getParameters().isCallbackReportingEnabled()) {
+			addToTree(context, step.getText(), stepId);
+		}
 	}
 
 	@Override
@@ -73,6 +81,8 @@ public class StepReporter extends AbstractReporter {
 		myLaunch.getStepReporter().finishPreviousStep();
 		Utils.finishTestItem(myLaunch, context.getCurrentStepId(), result.getStatus());
 		context.setCurrentStepId(null);
+		removeFromTree(context, context.getCurrentText());
+		context.setCurrentText(null);
 	}
 
 	@Override

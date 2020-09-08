@@ -19,6 +19,7 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.message.ReportPortalMessage;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
+import com.epam.reportportal.service.tree.TestItemTree;
 import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
@@ -48,6 +49,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static com.epam.reportportal.cucumber.Utils.getCodeRef;
 import static com.epam.reportportal.cucumber.Utils.getDescription;
+import static com.epam.reportportal.cucumber.internal.ItemTreeUtils.createKey;
+import static com.epam.reportportal.cucumber.internal.ItemTreeUtils.retrieveLeaf;
 import static rp.com.google.common.base.Strings.isNullOrEmpty;
 import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 
@@ -62,15 +65,17 @@ import static rp.com.google.common.base.Throwables.getStackTraceAsString;
  */
 public abstract class AbstractReporter implements ConcurrentEventListener {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractReporter.class);
-
 	private static final String AGENT_PROPERTIES_FILE = "agent.properties";
+
+	public static final TestItemTree ITEM_TREE = new TestItemTree();
+	private static final int DEFAULT_CAPACITY = 16;
 
 	protected Supplier<Launch> launch;
 	static final String COLON_INFIX = ": ";
 	private static final String SKIPPED_ISSUE_KEY = "skippedIssue";
 	private final Map<URI, RunningContext.FeatureContext> currentFeatureContextMap = new ConcurrentHashMap<>();
 
-	private final Map<Pair<String, URI>, RunningContext.ScenarioContext> currentScenarioContextMap = new ConcurrentHashMap<>();
+	private final Map<Pair<Integer, URI>, RunningContext.ScenarioContext> currentScenarioContextMap = new ConcurrentHashMap<>();
 
 	// There is no event for recognizing end of feature in Cucumber.
 	// This map is used to record the last scenario time and its feature uri.
@@ -117,7 +122,8 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 */
 	protected void beforeLaunch() {
 		startLaunch();
-		launch.get().start();
+		Maybe<String> launchId = launch.get().start();
+		ITEM_TREE.setLaunchId(launchId);
 	}
 
 	/**
@@ -138,22 +144,38 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		launch.get().finish(finishLaunchRq);
 	}
 
+	private void addToTree(RunningContext.FeatureContext featureContext, RunningContext.ScenarioContext scenarioContext) {
+		retrieveLeaf(featureContext.getUri(), ITEM_TREE).ifPresent(suiteLeaf -> suiteLeaf.getChildItems()
+				.put(createKey(scenarioContext.getLine()), TestItemTree.createTestItemLeaf(scenarioContext.getId(), DEFAULT_CAPACITY)));
+	}
+
 	/**
 	 * Start Cucumber scenario
 	 */
-	protected void beforeScenario(RunningContext.FeatureContext currentFeatureContext,
-			RunningContext.ScenarioContext currentScenarioContext, String scenarioName) {
-		String description = getDescription(currentFeatureContext.getUri());
-		String codeRef = getCodeRef(currentFeatureContext.getUri(), currentScenarioContext.getLine());
-		Maybe<String> id = Utils.startNonLeafNode(launch.get(),
-				currentFeatureContext.getFeatureId(),
+	protected void beforeScenario(RunningContext.FeatureContext featureContext, RunningContext.ScenarioContext scenarioContext,
+			String scenarioName) {
+		String description = getDescription(featureContext.getUri());
+		URI uri = featureContext.getUri();
+		int line = scenarioContext.getLine();
+		String codeRef = getCodeRef(uri, line);
+		Launch myLaunch = launch.get();
+		Maybe<String> id = Utils.startNonLeafNode(myLaunch,
+				featureContext.getFeatureId(),
 				scenarioName,
 				description,
 				codeRef,
-				currentScenarioContext.getAttributes(),
+				scenarioContext.getAttributes(),
 				getScenarioTestItemType()
 		);
-		currentScenarioContext.setId(id);
+		scenarioContext.setId(id);
+		if (myLaunch.getParameters().isCallbackReportingEnabled()) {
+			addToTree(featureContext, scenarioContext);
+		}
+	}
+
+	private void removeFromTree(RunningContext.FeatureContext featureContext, RunningContext.ScenarioContext scenarioContext) {
+		retrieveLeaf(featureContext.getUri(), ITEM_TREE).ifPresent(suiteLeaf -> suiteLeaf.getChildItems()
+				.remove(createKey(scenarioContext.getLine())));
 	}
 
 	/**
@@ -162,15 +184,11 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 */
 	protected void afterScenario(TestCaseFinished event) {
 		RunningContext.ScenarioContext context = getCurrentScenarioContext();
-		for (Map.Entry<Pair<String, URI>, RunningContext.ScenarioContext> scenarioContext : currentScenarioContextMap.entrySet()) {
-			if (scenarioContext.getValue().getLine() == context.getLine()) {
-				currentScenarioContextMap.remove(scenarioContext.getKey());
-				Date endTime = Utils.finishTestItem(launch.get(), context.getId(), event.getResult().getStatus());
-				URI featureURI = scenarioContext.getKey().getValue();
-				featureEndTime.put(featureURI, endTime);
-				break;
-			}
-		}
+		URI featureUri = context.getFeatureUri();
+		currentScenarioContextMap.remove(Pair.of(context.getLine(), featureUri));
+		Date endTime = Utils.finishTestItem(launch.get(), context.getId(), event.getResult().getStatus());
+		featureEndTime.put(featureUri, endTime);
+		removeFromTree(currentFeatureContextMap.get(featureUri), context);
 		currentScenarioContext.set(null);
 	}
 
@@ -309,7 +327,6 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		}
 		String prefix = "";
 		try {
-
 			MediaType mt = getMimeTypes().forName(type).getType();
 			prefix = mt.getType();
 		} catch (MimeTypeException e) {
@@ -386,22 +403,35 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		return event -> write(event.getText());
 	}
 
+	private void removeFromTree(RunningContext.FeatureContext featureContext) {
+		ITEM_TREE.getTestItems().remove(createKey(featureContext.getUri()));
+	}
+
 	protected void handleEndOfFeature() {
-		for (RunningContext.FeatureContext value : currentFeatureContextMap.values()) {
-			Date featureCompletionDateTime = featureEndTime.get(value.getUri());
-			Utils.finishFeature(launch.get(), value.getFeatureId(), featureCompletionDateTime);
-		}
+		currentFeatureContextMap.values().forEach(f -> {
+			Date featureCompletionDateTime = featureEndTime.get(f.getUri());
+			Utils.finishFeature(launch.get(), f.getFeatureId(), featureCompletionDateTime);
+			removeFromTree(f);
+		});
 		currentFeatureContextMap.clear();
+	}
+
+	private void addToTree(RunningContext.FeatureContext context) {
+		ITEM_TREE.getTestItems()
+				.put(createKey(context.getUri()), TestItemTree.createTestItemLeaf(context.getFeatureId(), DEFAULT_CAPACITY));
 	}
 
 	protected void handleStartOfTestCase(TestCaseStarted event) {
 		TestCase testCase = event.getTestCase();
 		RunningContext.FeatureContext newFeatureContext = new RunningContext.FeatureContext(testCase);
 		URI featureUri = newFeatureContext.getUri();
-		RunningContext.FeatureContext featureContext = currentFeatureContextMap.computeIfAbsent(
-				featureUri,
-				u -> startFeatureContext(newFeatureContext)
-		);
+		RunningContext.FeatureContext featureContext = currentFeatureContextMap.computeIfAbsent(featureUri, u -> {
+			RunningContext.FeatureContext c = startFeatureContext(newFeatureContext);
+			if (launch.get().getParameters().isCallbackReportingEnabled()) {
+				addToTree(c);
+			}
+			return c;
+		});
 
 		if (!featureContext.getUri().equals(testCase.getUri())) {
 			throw new IllegalStateException("Scenario URI does not match Feature URI.");
@@ -414,14 +444,11 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 				newScenarioContext.getOutlineIteration()
 		);
 
-		Pair<String, URI> scenarioNameFeatureURI = Pair.of(testCase.getScenarioDesignation(), featureContext.getUri());
-		RunningContext.ScenarioContext scenarioContext = currentScenarioContextMap.get(scenarioNameFeatureURI);
-
-		if (scenarioContext == null) {
-			scenarioContext = newScenarioContext;
-			currentScenarioContextMap.put(scenarioNameFeatureURI, scenarioContext);
-			currentScenarioContext.set(scenarioContext);
-		}
+		Pair<Integer, URI> scenarioLineFeatureURI = Pair.of(newScenarioContext.getLine(), featureContext.getUri());
+		RunningContext.ScenarioContext scenarioContext = currentScenarioContextMap.computeIfAbsent(scenarioLineFeatureURI, k -> {
+			currentScenarioContext.set(newScenarioContext);
+			return newScenarioContext;
+		});
 
 		beforeScenario(featureContext, scenarioContext, scenarioName);
 	}
@@ -445,5 +472,18 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		} else {
 			afterStep(event.getResult());
 		}
+	}
+
+	protected void addToTree(RunningContext.ScenarioContext scenarioContext, String text, Maybe<String> stepId) {
+		retrieveLeaf(scenarioContext.getFeatureUri(), scenarioContext.getLine(), ITEM_TREE).ifPresent(suiteLeaf -> suiteLeaf.getChildItems()
+				.put(createKey(text), TestItemTree.createTestItemLeaf(stepId, 0)));
+	}
+
+	protected void removeFromTree(RunningContext.ScenarioContext scenarioContext, String text) {
+		retrieveLeaf(
+				scenarioContext.getFeatureUri(),
+				scenarioContext.getLine(),
+				ITEM_TREE
+		).ifPresent(scenarioLeaf -> scenarioLeaf.getChildItems().remove(createKey(text)));
 	}
 }
