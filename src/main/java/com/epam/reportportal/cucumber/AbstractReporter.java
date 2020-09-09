@@ -19,12 +19,14 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.message.ReportPortalMessage;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
+import com.epam.reportportal.service.item.TestCaseIdEntry;
 import com.epam.reportportal.service.tree.TestItemTree;
 import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
+import io.cucumber.messages.Messages;
 import io.cucumber.plugin.ConcurrentEventListener;
 import io.cucumber.plugin.event.*;
 import io.reactivex.Maybe;
@@ -44,6 +46,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -51,6 +54,7 @@ import static com.epam.reportportal.cucumber.Utils.getCodeRef;
 import static com.epam.reportportal.cucumber.Utils.getDescription;
 import static com.epam.reportportal.cucumber.internal.ItemTreeUtils.createKey;
 import static com.epam.reportportal.cucumber.internal.ItemTreeUtils.retrieveLeaf;
+import static java.util.Optional.ofNullable;
 import static rp.com.google.common.base.Strings.isNullOrEmpty;
 import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 
@@ -159,7 +163,8 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		int line = scenarioContext.getLine();
 		String codeRef = getCodeRef(uri, line);
 		Launch myLaunch = launch.get();
-		Maybe<String> id = Utils.startNonLeafNode(myLaunch,
+		Maybe<String> id = Utils.startNonLeafNode(
+				myLaunch,
 				featureContext.getFeatureId(),
 				scenarioName,
 				description,
@@ -233,32 +238,105 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	}
 
 	/**
+	 * Extension point to customize test creation event/request
+	 *
+	 * @param testStep a cucumber step object
+	 * @return Request to ReportPortal
+	 */
+	protected StartTestItemRQ buildStartStepRequest(TestStep testStep, String stepPrefix, String keyword) {
+		StartTestItemRQ rq = new StartTestItemRQ();
+		rq.setName(Utils.buildNodeName(stepPrefix, keyword, Utils.getStepName(testStep), ""));
+		rq.setDescription(Utils.buildMultilineArgument(testStep));
+		rq.setStartTime(Calendar.getInstance().getTime());
+		rq.setType("STEP");
+		String codeRef = Utils.getCodeRef(testStep);
+		if (testStep instanceof PickleStepTestStep) {
+			PickleStepTestStep pickleStepTestStep = (PickleStepTestStep) testStep;
+			List<Argument> arguments = pickleStepTestStep.getDefinitionArgument();
+			rq.setParameters(Utils.getParameters(codeRef, arguments));
+		}
+		rq.setCodeRef(codeRef);
+		rq.setTestCaseId(ofNullable(Utils.getTestCaseId(testStep, codeRef)).map(TestCaseIdEntry::getId).orElse(null));
+		rq.setAttributes(Utils.getAttributes(testStep));
+		return rq;
+	}
+
+	/**
 	 * Start Cucumber step
 	 *
-	 * @param step Step object
+	 * @param testStep a cucumber step object
 	 */
-	protected abstract void beforeStep(TestStep step);
+	protected void beforeStep(TestStep testStep) {
+		RunningContext.ScenarioContext context = getCurrentScenarioContext();
+		Messages.GherkinDocument.Feature.Step step = context.getStep(testStep);
+		StartTestItemRQ rq = buildStartStepRequest(testStep, context.getStepPrefix(), step.getKeyword());
+		Launch myLaunch = launch.get();
+		Maybe<String> stepId = myLaunch.startTestItem(context.getId(), rq);
+		context.setCurrentStepId(stepId);
+		String stepText = step.getText();
+		context.setCurrentText(stepText);
+
+		if (myLaunch.getParameters().isCallbackReportingEnabled()) {
+			addToTree(context, step.getText(), stepId);
+		}
+	}
 
 	/**
 	 * Finish Cucumber step
 	 *
 	 * @param result Step result
 	 */
-	protected abstract void afterStep(Result result);
+	protected void afterStep(Result result) {
+		reportResult(result, null);
+		RunningContext.ScenarioContext context = getCurrentScenarioContext();
+		Launch myLaunch = launch.get();
+		myLaunch.getStepReporter().finishPreviousStep();
+		Utils.finishTestItem(myLaunch, context.getCurrentStepId(), result.getStatus());
+		context.setCurrentStepId(null);
+		removeFromTree(context, context.getCurrentText());
+		context.setCurrentText(null);
+	}
+
+	/**
+	 * Extension point to customize test creation event/request
+	 *
+	 * @param hookType a cucumber hook type object
+	 * @return Request to ReportPortal
+	 */
+	protected StartTestItemRQ buildStartBeforeHookRequest(HookType hookType) {
+		StartTestItemRQ rq = new StartTestItemRQ();
+		Pair<String, String> typeName = Utils.getHookTypeAndName(hookType);
+		rq.setType(typeName.getKey());
+		rq.setName(typeName.getValue());
+		rq.setStartTime(Calendar.getInstance().getTime());
+		return rq;
+	}
 
 	/**
 	 * Called when before/after-hooks are started
 	 *
 	 * @param hookType a hook type
 	 */
-	protected abstract void beforeHooks(HookType hookType);
+	protected void beforeHooks(HookType hookType) {
+		StartTestItemRQ rq = buildStartBeforeHookRequest(hookType);
+
+		RunningContext.ScenarioContext context = getCurrentScenarioContext();
+		context.setHookStepId(launch.get().startTestItem(getCurrentScenarioContext().getId(), rq));
+		context.setHookStatus(Status.PASSED);
+	}
 
 	/**
 	 * Called when before/after-hooks are finished
 	 *
-	 * @param isBefore - if true, before-hook is finished, if false - after-hook
+	 * @param hookType a hook type
 	 */
-	protected abstract void afterHooks(Boolean isBefore);
+	protected void afterHooks(HookType hookType) {
+		RunningContext.ScenarioContext context = getCurrentScenarioContext();
+		Launch myLaunch = launch.get();
+		myLaunch.getStepReporter().finishPreviousStep();
+		Utils.finishTestItem(myLaunch, context.getHookStepId(), context.getHookStatus());
+		context.setHookStepId(null);
+	}
 
 	/**
 	 * Called when a specific before/after-hook is finished
@@ -267,7 +345,10 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 * @param result   Hook result
 	 * @param isBefore - if true, before-hook, if false - after-hook
 	 */
-	protected abstract void hookFinished(HookTestStep step, Result result, Boolean isBefore);
+	protected void hookFinished(HookTestStep step, Result result, Boolean isBefore) {
+		reportResult(result, (isBefore ? "Before" : "After") + " hook: " + step.getCodeLocation());
+		getCurrentScenarioContext().setHookStatus(result.getStatus());
+	}
 
 	/**
 	 * Return RP launch test item name mapped to Cucumber feature
@@ -438,7 +519,8 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		}
 
 		RunningContext.ScenarioContext newScenarioContext = featureContext.getScenarioContext(testCase);
-		String scenarioName = Utils.buildNodeName(newScenarioContext.getKeyword(),
+		String scenarioName = Utils.buildNodeName(
+				newScenarioContext.getKeyword(),
 				AbstractReporter.COLON_INFIX,
 				newScenarioContext.getName(),
 				newScenarioContext.getOutlineIteration()
@@ -467,8 +549,9 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 
 	protected void handleTestStepFinished(TestStepFinished event) {
 		if (event.getTestStep() instanceof HookTestStep) {
-			hookFinished((HookTestStep) event.getTestStep(), event.getResult(), isBefore(event.getTestStep()));
-			afterHooks(isBefore(event.getTestStep()));
+			HookTestStep hookTestStep = (HookTestStep) event.getTestStep();
+			hookFinished(hookTestStep, event.getResult(), isBefore(event.getTestStep()));
+			afterHooks(hookTestStep.getHookType());
 		} else {
 			afterStep(event.getResult());
 		}

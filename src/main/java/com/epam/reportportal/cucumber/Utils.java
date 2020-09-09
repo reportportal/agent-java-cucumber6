@@ -388,24 +388,4 @@ public class Utils {
 		}
 		return Pair.of(type, name);
 	}
-
-	public static StartTestItemRQ buildStartStepRequest(String stepPrefix, TestStep testStep, Messages.GherkinDocument.Feature.Step step,
-			boolean hasStats) {
-		StartTestItemRQ rq = new StartTestItemRQ();
-		rq.setHasStats(hasStats);
-		rq.setName(Utils.buildNodeName(stepPrefix, step.getKeyword(), Utils.getStepName(testStep), ""));
-		rq.setDescription(Utils.buildMultilineArgument(testStep));
-		rq.setStartTime(Calendar.getInstance().getTime());
-		rq.setType("STEP");
-		String codeRef = Utils.getCodeRef(testStep);
-		if (testStep instanceof PickleStepTestStep) {
-			PickleStepTestStep pickleStepTestStep = (PickleStepTestStep) testStep;
-			List<Argument> arguments = pickleStepTestStep.getDefinitionArgument();
-			rq.setParameters(Utils.getParameters(codeRef, arguments));
-		}
-		rq.setCodeRef(codeRef);
-		rq.setTestCaseId(ofNullable(Utils.getTestCaseId(testStep, codeRef)).map(TestCaseIdEntry::getId).orElse(null));
-		rq.setAttributes(Utils.getAttributes(testStep));
-		return rq;
-	}
 }

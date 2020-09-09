@@ -50,18 +50,18 @@ class RunningContext {
 		private final Set<ItemAttributesRQ> attributes;
 		private Maybe<String> currentFeatureId;
 
-		FeatureContext(TestCase testCase) {
+		public FeatureContext(TestCase testCase) {
 			TestSourceRead event = PATH_TO_READ_EVENT_MAP.get(testCase.getUri());
 			currentFeature = getFeature(event.getSource());
 			currentFeatureUri = event.getUri();
 			attributes = Utils.extractAttributes(currentFeature.getTagsList());
 		}
 
-		static void addTestSourceReadEvent(URI uri, TestSourceRead event) {
+		public static void addTestSourceReadEvent(URI uri, TestSourceRead event) {
 			PATH_TO_READ_EVENT_MAP.put(uri, event);
 		}
 
-		ScenarioContext getScenarioContext(TestCase testCase) {
+		public ScenarioContext getScenarioContext(TestCase testCase) {
 			Messages.GherkinDocument.Feature.Scenario scenario = getScenario(testCase);
 			ScenarioContext context = new ScenarioContext();
 			context.processTags(testCase.getTags());
@@ -73,40 +73,40 @@ class RunningContext {
 			return context;
 		}
 
-		Messages.GherkinDocument.Feature getFeature(String source) {
+		public Messages.GherkinDocument.Feature getFeature(String source) {
 			Parser<Messages.GherkinDocument.Builder> parser = new Parser<>(new GherkinDocumentBuilder(new IdGenerator.UUID()));
 			TokenMatcher matcher = new TokenMatcher();
 			Messages.GherkinDocument gherkinDocument = parser.parse(source, matcher).build();
 			return gherkinDocument.getFeature();
 		}
 
-		Messages.GherkinDocument.Feature.Background getBackground() {
+		public Messages.GherkinDocument.Feature.Background getBackground() {
 			Messages.GherkinDocument.Feature.FeatureChild scenario = getFeature().getChildren(0);
 			return scenario.hasBackground() ? scenario.getBackground() : null;
 		}
 
-		Messages.GherkinDocument.Feature getFeature() {
+		public Messages.GherkinDocument.Feature getFeature() {
 			return currentFeature;
 		}
 
-		Set<ItemAttributesRQ> getAttributes() {
+		public Set<ItemAttributesRQ> getAttributes() {
 			return attributes;
 		}
 
-		URI getUri() {
+		public URI getUri() {
 			return currentFeatureUri;
 		}
 
-		Maybe<String> getFeatureId() {
+		public Maybe<String> getFeatureId() {
 			return currentFeatureId;
 		}
 
-		void setFeatureId(Maybe<String> featureId) {
+		public void setFeatureId(Maybe<String> featureId) {
 			this.currentFeatureId = featureId;
 		}
 
 		@SuppressWarnings("unchecked")
-		<T extends Messages.GherkinDocument.Feature.Scenario> T getScenario(TestCase testCase) {
+		public <T extends Messages.GherkinDocument.Feature.Scenario> T getScenario(TestCase testCase) {
 			List<Messages.GherkinDocument.Feature.FeatureChild> featureScenarios = getFeature().getChildrenList();
 			for (Messages.GherkinDocument.Feature.FeatureChild child : featureScenarios) {
 				if (!child.hasScenario()) {
@@ -145,25 +145,24 @@ class RunningContext {
 		private Set<ItemAttributesRQ> attributes;
 		private TestCase testCase;
 		private boolean hasBackground = false;
-		private String scenarioDesignation;
 		private String outlineIteration;
 		private URI uri;
 		private String text;
 
-		ScenarioContext() {
+		public ScenarioContext() {
 			backgroundSteps = new ArrayDeque<>();
 			scenarioLocationMap = new HashMap<>();
 			attributes = new HashSet<>();
 		}
 
-		void processScenario(Messages.GherkinDocument.Feature.Scenario scenario) {
+		public void processScenario(Messages.GherkinDocument.Feature.Scenario scenario) {
 			this.scenario = scenario;
 			for (Messages.GherkinDocument.Feature.Step step : scenario.getStepsList()) {
 				scenarioLocationMap.put(step.getLocation().getLine(), step);
 			}
 		}
 
-		void processBackground(Messages.GherkinDocument.Feature.Background background) {
+		public void processBackground(Messages.GherkinDocument.Feature.Background background) {
 			if (background != null) {
 				this.background = background;
 				hasBackground = true;
@@ -179,7 +178,7 @@ class RunningContext {
 		/**
 		 * Takes the serial number of scenario outline and links it to the executing scenario
 		 **/
-		void processScenarioOutline(Messages.GherkinDocument.Feature.Scenario scenarioOutline) {
+		public void processScenarioOutline(Messages.GherkinDocument.Feature.Scenario scenarioOutline) {
 			if (isScenarioOutline(scenarioOutline)) {
 				scenarioOutlineMap.computeIfAbsent(scenarioOutline,
 						k -> scenarioOutline.getExamplesList()
@@ -192,39 +191,39 @@ class RunningContext {
 						.filter(i -> getLine() == scenarioOutlineMap.get(scenarioOutline).get(i))
 						.findFirst()
 						.orElseThrow(() -> new IllegalStateException(String.format("No outline iteration number found for scenario %s",
-								scenarioDesignation
+								Utils.getCodeRef(uri, getLine())
 						)));
 				outlineIteration = String.format("[%d]", iterationIdx + 1);
 			}
 		}
 
-		void processTags(List<String> tags) {
+		public void processTags(List<String> tags) {
 			attributes = Utils.extractAttributes(tags);
 		}
 
-		void mapBackgroundSteps(Messages.GherkinDocument.Feature.Background background) {
+		public void mapBackgroundSteps(Messages.GherkinDocument.Feature.Background background) {
 			for (Messages.GherkinDocument.Feature.Step step : background.getStepsList()) {
 				scenarioLocationMap.put(step.getLocation().getLine(), step);
 			}
 		}
 
-		String getName() {
+		public String getName() {
 			return scenario.getName();
 		}
 
-		String getKeyword() {
+		public String getKeyword() {
 			return scenario.getKeyword();
 		}
 
-		int getLine() {
+		public int getLine() {
 			return isScenarioOutline(scenario) ? testCase.getLocation().getLine() : scenario.getLocation().getLine();
 		}
 
-		String getStepPrefix() {
+		public String getStepPrefix() {
 			return hasBackground() && withBackground() ? background.getKeyword().toUpperCase() + AbstractReporter.COLON_INFIX : "";
 		}
 
-		Messages.GherkinDocument.Feature.Step getStep(TestStep testStep) {
+		public Messages.GherkinDocument.Feature.Step getStep(TestStep testStep) {
 			PickleStepTestStep pickleStepTestStep = (PickleStepTestStep) testStep;
 			Messages.GherkinDocument.Feature.Step step = scenarioLocationMap.get(pickleStepTestStep.getStep().getLine());
 			if (step != null) {
@@ -236,39 +235,38 @@ class RunningContext {
 			));
 		}
 
-		Maybe<String> getId() {
+		public Maybe<String> getId() {
 			return id;
 		}
 
-		void setId(Maybe<String> newId) {
+		public void setId(Maybe<String> newId) {
 			if (id != null) {
 				throw new IllegalStateException("Attempting re-set scenario ID for unfinished scenario: " + getName());
 			}
 			id = newId;
 		}
 
-		void setTestCase(TestCase testCase) {
+		public void setTestCase(TestCase testCase) {
 			this.testCase = testCase;
-			scenarioDesignation = testCase.getScenarioDesignation();
 		}
 
-		void nextBackgroundStep() {
+		public void nextBackgroundStep() {
 			backgroundSteps.poll();
 		}
 
-		boolean isScenarioOutline(Messages.GherkinDocument.Feature.Scenario scenario) {
+		public boolean isScenarioOutline(Messages.GherkinDocument.Feature.Scenario scenario) {
 			return scenario.getExamplesCount() > 0;
 		}
 
-		boolean withBackground() {
+		public boolean withBackground() {
 			return !backgroundSteps.isEmpty();
 		}
 
-		boolean hasBackground() {
+		public boolean hasBackground() {
 			return hasBackground && background != null;
 		}
 
-		String getOutlineIteration() {
+		public String getOutlineIteration() {
 			return outlineIteration;
 		}
 
