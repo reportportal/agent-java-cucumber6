@@ -68,11 +68,10 @@ import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 public abstract class AbstractReporter implements ConcurrentEventListener {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractReporter.class);
 	private static final String AGENT_PROPERTIES_FILE = "agent.properties";
+	private static final int DEFAULT_CAPACITY = 16;
 
 	public static final TestItemTree ITEM_TREE = new TestItemTree();
 	private static volatile ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
-
-	private static final int DEFAULT_CAPACITY = 16;
 
 	protected Supplier<Launch> launch;
 	static final String COLON_INFIX = ": ";

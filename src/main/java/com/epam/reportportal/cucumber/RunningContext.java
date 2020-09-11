@@ -40,7 +40,7 @@ import java.util.stream.IntStream;
  */
 class RunningContext {
 
-	public RunningContext() {
+	private RunningContext() {
 		throw new AssertionError("No instances should exist for the class!");
 	}
 
