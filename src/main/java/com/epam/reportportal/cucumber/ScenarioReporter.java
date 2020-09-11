@@ -22,7 +22,9 @@ import io.reactivex.Maybe;
 import rp.com.google.common.base.Supplier;
 import rp.com.google.common.base.Suppliers;
 
+import javax.annotation.Nonnull;
 import java.util.Calendar;
+import java.util.Optional;
 
 /**
  * Cucumber reporter for ReportPortal that reports scenarios as test methods.
@@ -44,6 +46,7 @@ import java.util.Calendar;
  * @author Sergey_Gvozdyukevich
  * @author Serhii Zharskyi
  * @author Vitaliy Tsvihun
+ * @author Vadzim Hushchanskou
  */
 public class ScenarioReporter extends AbstractReporter {
 	private static final String RP_STORY_TYPE = "SUITE";
@@ -67,25 +70,28 @@ public class ScenarioReporter extends AbstractReporter {
 	}
 
 	@Override
-	protected StartTestItemRQ buildStartBeforeHookRequest(HookType hookType) {
-		StartTestItemRQ rq = super.buildStartBeforeHookRequest(hookType);
-		rq.setHasStats(true);
+	protected StartTestItemRQ buildStartHookRequest(HookType hookType) {
+		StartTestItemRQ rq = super.buildStartHookRequest(hookType);
+		rq.setHasStats(false);
 		return rq;
 	}
 
 	@Override
+	@Nonnull
 	protected String getFeatureTestItemType() {
 		return RP_TEST_TYPE;
 	}
 
 	@Override
+	@Nonnull
 	protected String getScenarioTestItemType() {
 		return RP_STEP_TYPE;
 	}
 
 	@Override
-	protected Maybe<String> getRootItemId() {
-		return rootSuiteId.get();
+	@Nonnull
+	protected Optional<Maybe<String>> getRootItemId() {
+		return Optional.of(rootSuiteId.get());
 	}
 
 	@Override

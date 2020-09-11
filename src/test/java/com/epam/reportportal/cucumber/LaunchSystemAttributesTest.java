@@ -70,6 +70,7 @@ public class LaunchSystemAttributesTest {
 		when(listenerParameters.getEnable()).thenReturn(true);
 		when(listenerParameters.getIoPoolSize()).thenReturn(10);
 		when(listenerParameters.getBatchLogsSize()).thenReturn(5);
+		StepReporter.setReportPortal(ReportPortal.create(reportPortalClient, listenerParameters));
 		stepReporter = new StepReporter() {
 			@Override
 			protected ReportPortal buildReportPortal() {

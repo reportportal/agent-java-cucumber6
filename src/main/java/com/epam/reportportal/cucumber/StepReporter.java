@@ -17,6 +17,9 @@ package com.epam.reportportal.cucumber;
 
 import io.reactivex.Maybe;
 
+import javax.annotation.Nonnull;
+import java.util.Optional;
+
 /**
  * Cucumber reporter for ReportPortal that reports individual steps as test
  * methods.
@@ -36,6 +39,7 @@ import io.reactivex.Maybe;
  * @author Sergey_Gvozdyukevich
  * @author Serhii Zharskyi
  * @author Vitaliy Tsvihun
+ * @author Vadzim Hushchanskou
  */
 public class StepReporter extends AbstractReporter {
 	private static final String RP_STORY_TYPE = "STORY";
@@ -46,16 +50,19 @@ public class StepReporter extends AbstractReporter {
 	}
 
 	@Override
-	protected Maybe<String> getRootItemId() {
-		return null;
+	@Nonnull
+	protected Optional<Maybe<String>> getRootItemId() {
+		return Optional.empty();
 	}
 
 	@Override
+	@Nonnull
 	protected String getFeatureTestItemType() {
 		return RP_STORY_TYPE;
 	}
 
 	@Override
+	@Nonnull
 	protected String getScenarioTestItemType() {
 		return RP_TEST_TYPE;
 	}

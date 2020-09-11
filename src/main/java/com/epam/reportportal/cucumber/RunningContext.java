@@ -36,6 +36,7 @@ import java.util.stream.IntStream;
  *
  * @author Serhii Zharskyi
  * @author Vitaliy Tsvihun
+ * @author Vadzim Hushchanskou
  */
 class RunningContext {
 

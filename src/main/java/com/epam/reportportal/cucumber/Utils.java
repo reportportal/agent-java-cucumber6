@@ -48,6 +48,9 @@ import java.util.stream.Collectors;
 
 import static java.util.Optional.ofNullable;
 
+/**
+ * @author Vadzim Hushchanskou
+ */
 public class Utils {
 	private static final Logger LOGGER = LoggerFactory.getLogger(Utils.class);
 	private static final String TABLE_INDENT = "          ";

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.reportportal.cucumber.internal;
+package com.epam.reportportal.cucumber.util;
 
 import com.epam.reportportal.service.tree.TestItemTree;
 

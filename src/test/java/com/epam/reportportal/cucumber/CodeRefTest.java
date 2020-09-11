@@ -32,7 +32,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -74,7 +73,7 @@ public class CodeRefTest {
 	private final String launchId = CommonUtils.namedId("launch_");
 	private final String suiteId = CommonUtils.namedId("suite_");
 	private final List<String> testIds = Stream.generate(() -> CommonUtils.namedId("test_")).limit(2).collect(Collectors.toList());
-	private final List<Pair<String, ? extends Collection<String>>> tests = testIds.stream()
+	private final List<Pair<String, List<String>>> tests = testIds.stream()
 			.map(id -> Pair.of(id, Stream.generate(() -> CommonUtils.namedId("step_")).limit(3).collect(Collectors.toList())))
 			.collect(Collectors.toList());
 
@@ -139,7 +138,8 @@ public class CodeRefTest {
 	}
 
 	private static final List<String> TWO_FEATURES_CODE_REFERENCES = Arrays.asList("src/test/resources/features/TwoScenarioInOne.feature:3",
-			"src/test/resources/features/TwoScenarioInOne.feature:7");
+			"src/test/resources/features/TwoScenarioInOne.feature:7"
+	);
 
 	private static final List<String> TWO_STEPS_CODE_REFERENCE = Arrays.asList(
 			"com.epam.reportportal.cucumber.integration.feature.EmptySteps.i_have_empty_step",
