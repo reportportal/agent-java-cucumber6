@@ -38,7 +38,7 @@ import java.util.stream.IntStream;
  * @author Vitaliy Tsvihun
  * @author Vadzim Hushchanskou
  */
-class RunningContext {
+public class RunningContext {
 
 	private RunningContext() {
 		throw new AssertionError("No instances should exist for the class!");
@@ -135,26 +135,20 @@ class RunningContext {
 	public static class ScenarioContext {
 		private static final Map<Messages.GherkinDocument.Feature.Scenario, List<Integer>> scenarioOutlineMap = new ConcurrentHashMap<>();
 
+		private final Queue<Messages.GherkinDocument.Feature.Step> backgroundSteps = new ArrayDeque<>();
+		private final Map<Integer, Messages.GherkinDocument.Feature.Step> scenarioLocationMap = new HashMap<>();
+		private Set<ItemAttributesRQ> attributes = new HashSet<>();
 		private Maybe<String> currentStepId;
 		private Maybe<String> hookStepId;
 		private Status hookStatus;
 		private Maybe<String> id;
 		private Messages.GherkinDocument.Feature.Background background;
 		private Messages.GherkinDocument.Feature.Scenario scenario;
-		private final Queue<Messages.GherkinDocument.Feature.Step> backgroundSteps;
-		private final Map<Integer, Messages.GherkinDocument.Feature.Step> scenarioLocationMap;
-		private Set<ItemAttributesRQ> attributes;
 		private TestCase testCase;
 		private boolean hasBackground = false;
 		private String outlineIteration;
 		private URI uri;
 		private String text;
-
-		public ScenarioContext() {
-			backgroundSteps = new ArrayDeque<>();
-			scenarioLocationMap = new HashMap<>();
-			attributes = new HashSet<>();
-		}
 
 		public void processScenario(Messages.GherkinDocument.Feature.Scenario scenario) {
 			this.scenario = scenario;
