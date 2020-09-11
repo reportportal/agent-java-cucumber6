@@ -76,8 +76,8 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	protected Supplier<Launch> launch;
 	static final String COLON_INFIX = ": ";
 	private static final String SKIPPED_ISSUE_KEY = "skippedIssue";
-	private final Map<URI, RunningContext.FeatureContext> currentFeatureContextMap = new ConcurrentHashMap<>();
 
+	private final Map<URI, RunningContext.FeatureContext> currentFeatureContextMap = new ConcurrentHashMap<>();
 	private final Map<Pair<Integer, URI>, RunningContext.ScenarioContext> currentScenarioContextMap = new ConcurrentHashMap<>();
 
 	// There is no event for recognizing end of feature in Cucumber.
@@ -166,9 +166,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	protected void beforeScenario(RunningContext.FeatureContext featureContext, RunningContext.ScenarioContext scenarioContext,
 			String scenarioName) {
 		String description = getDescription(featureContext.getUri());
-		URI uri = featureContext.getUri();
-		int line = scenarioContext.getLine();
-		String codeRef = getCodeRef(uri, line);
+		String codeRef = getCodeRef(featureContext.getUri(), scenarioContext.getLine());
 		Launch myLaunch = launch.get();
 		Maybe<String> id = Utils.startNonLeafNode(
 				myLaunch,
@@ -201,6 +199,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		Date endTime = Utils.finishTestItem(launch.get(), context.getId(), event.getResult().getStatus());
 		featureEndTime.put(featureUri, endTime);
 		currentScenarioContext.set(null);
+		removeFromTree(currentFeatureContextMap.get(context.getFeatureUri()), context);
 	}
 
 	/**
@@ -340,12 +339,9 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		myLaunch.getStepReporter().finishPreviousStep();
 		Utils.finishTestItem(myLaunch, context.getHookStepId(), context.getHookStatus());
 		context.setHookStepId(null);
-		switch (hookType) {
-			case AFTER_STEP:
-				removeFromTree(context, context.getCurrentText());
-				context.setCurrentText(null);
-			case AFTER:
-				removeFromTree(currentFeatureContextMap.get(context.getFeatureUri()), context);
+		if (hookType == HookType.AFTER_STEP) {
+			removeFromTree(context, context.getCurrentText());
+			context.setCurrentText(null);
 		}
 	}
 
