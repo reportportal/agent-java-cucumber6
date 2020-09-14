@@ -379,7 +379,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 * @param result  - Cucumber result object
 	 * @param message - optional message to be logged in addition
 	 */
-	void reportResult(Result result, String message) {
+	protected void reportResult(Result result, String message) {
 		String cukesStatus = result.getStatus().toString();
 		String level = Utils.mapLevel(cukesStatus);
 		if (message != null) {
