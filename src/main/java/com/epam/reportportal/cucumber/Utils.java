@@ -197,16 +197,10 @@ public class Utils {
 	 * @param prefix   - substring to be prepended at the beginning (optional)
 	 * @param infix    - substring to be inserted between keyword and name
 	 * @param argument - main text to process
-	 * @param suffix   - substring to be appended at the end (optional)
 	 * @return transformed string
 	 */
-	//TODO: pass Node as argument, not test event
-	static String buildNodeName(String prefix, String infix, String argument, String suffix) {
-		return buildName(prefix, infix, argument, suffix);
-	}
-
-	private static String buildName(String prefix, String infix, String argument, String suffix) {
-		return (prefix == null ? EMPTY : prefix) + infix + argument + (suffix == null ? EMPTY : suffix);
+	public static String buildName(@Nullable String prefix, @Nonnull String infix, @Nonnull String argument) {
+		return (prefix == null ? EMPTY : prefix) + infix + argument;
 	}
 
 	/**

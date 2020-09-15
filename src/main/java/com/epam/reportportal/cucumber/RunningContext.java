@@ -118,7 +118,6 @@ public class RunningContext {
 					if (result != null) {
 						return Pair.of(result, null);
 					}
-					return Pair.of(getScenario(child.getScenario(), testCase), null);
 				}
 				if (child.hasRule()) {
 					Messages.GherkinDocument.Feature.FeatureChild.Rule rule = child.getRule();
@@ -392,7 +391,6 @@ public class RunningContext {
 			return attributes;
 		}
 
-		@Nonnull
 		public int getLine() {
 			return line;
 		}
