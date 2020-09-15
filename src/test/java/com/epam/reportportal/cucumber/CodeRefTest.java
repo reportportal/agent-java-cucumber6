@@ -1,3 +1,19 @@
+/*
+ * Copyright 2020 EPAM Systems
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.epam.reportportal.cucumber;
 
 import com.epam.reportportal.cucumber.integration.TestScenarioReporter;
@@ -16,7 +32,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -25,8 +40,6 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
@@ -60,7 +73,7 @@ public class CodeRefTest {
 	private final String launchId = CommonUtils.namedId("launch_");
 	private final String suiteId = CommonUtils.namedId("suite_");
 	private final List<String> testIds = Stream.generate(() -> CommonUtils.namedId("test_")).limit(2).collect(Collectors.toList());
-	private final List<Pair<String, ? extends Collection<String>>> tests = testIds.stream()
+	private final List<Pair<String, List<String>>> tests = testIds.stream()
 			.map(id -> Pair.of(id, Stream.generate(() -> CommonUtils.namedId("step_")).limit(3).collect(Collectors.toList())))
 			.collect(Collectors.toList());
 
@@ -76,13 +89,9 @@ public class CodeRefTest {
 		TestStepReporter.RP.set(reportPortal);
 	}
 
-	private static final Pair<String, String> FEATURE_CODE_REFERENCES = Pair.of("file:///",
-			"/agent-java-cucumber6/src/test/resources/features/belly.feature:0"
-	);
+	private static final String FEATURE_CODE_REFERENCES = "src/test/resources/features/belly.feature:0";
 
-	private static final Pair<String, String> SCENARIO_CODE_REFERENCES = Pair.of("file:///",
-			"/agent-java-cucumber6/src/test/resources/features/belly.feature:4"
-	);
+	private static final String SCENARIO_CODE_REFERENCES = "src/test/resources/features/belly.feature:4";
 
 	@Test
 	public void verify_code_reference_scenario_reporter() {
@@ -98,12 +107,8 @@ public class CodeRefTest {
 		StartTestItemRQ feature = items.get(0);
 		StartTestItemRQ scenario = items.get(1);
 
-		assertThat(feature.getCodeRef(),
-				allOf(notNullValue(), startsWith(FEATURE_CODE_REFERENCES.getKey()), endsWith(FEATURE_CODE_REFERENCES.getValue()))
-		);
-		assertThat(scenario.getCodeRef(),
-				allOf(notNullValue(), startsWith(SCENARIO_CODE_REFERENCES.getKey()), endsWith(SCENARIO_CODE_REFERENCES.getValue()))
-		);
+		assertThat(feature.getCodeRef(), allOf(notNullValue(), equalTo(FEATURE_CODE_REFERENCES)));
+		assertThat(scenario.getCodeRef(), allOf(notNullValue(), equalTo(SCENARIO_CODE_REFERENCES)));
 	}
 
 	private static final List<String> STEP_CODE_REFERENCE = Arrays.asList(
@@ -126,19 +131,14 @@ public class CodeRefTest {
 		StartTestItemRQ scenario = items.get(0);
 		List<StartTestItemRQ> steps = items.subList(1, items.size());
 
-		assertThat(scenario.getCodeRef(),
-				allOf(notNullValue(), startsWith(SCENARIO_CODE_REFERENCES.getKey()), endsWith(SCENARIO_CODE_REFERENCES.getValue()))
-		);
+		assertThat(scenario.getCodeRef(), allOf(notNullValue(), equalTo(SCENARIO_CODE_REFERENCES)));
 
 		IntStream.range(0, STEP_CODE_REFERENCE.size())
 				.forEach(i -> assertThat(steps.get(i).getCodeRef(), allOf(notNullValue(), equalTo(STEP_CODE_REFERENCE.get(i)))));
 	}
 
-	private static final List<Pair<String, String>> TWO_FEATURES_CODE_REFERENCES = Arrays.asList(Pair.of(
-			"file:///",
-			"/agent-java-cucumber6/src/test/resources/features/TwoScenarioInOne.feature:3"
-			),
-			Pair.of("file:///", "/agent-java-cucumber6/src/test/resources/features/TwoScenarioInOne.feature:7")
+	private static final List<String> TWO_FEATURES_CODE_REFERENCES = Arrays.asList("src/test/resources/features/TwoScenarioInOne.feature:3",
+			"src/test/resources/features/TwoScenarioInOne.feature:7"
 	);
 
 	private static final List<String> TWO_STEPS_CODE_REFERENCE = Arrays.asList(
@@ -160,10 +160,8 @@ public class CodeRefTest {
 		List<StartTestItemRQ> suites = items.subList(0, 2);
 		List<StartTestItemRQ> steps = items.subList(2, items.size());
 
-		IntStream.range(0, TWO_FEATURES_CODE_REFERENCES.size()).forEach(i -> assertThat(suites.get(i).getCodeRef(), allOf(notNullValue(),
-				startsWith(TWO_FEATURES_CODE_REFERENCES.get(i).getKey()),
-				endsWith(TWO_FEATURES_CODE_REFERENCES.get(i).getValue())
-		)));
+		IntStream.range(0, TWO_FEATURES_CODE_REFERENCES.size())
+				.forEach(i -> assertThat(suites.get(i).getCodeRef(), allOf(notNullValue(), equalTo(TWO_FEATURES_CODE_REFERENCES.get(i)))));
 
 		IntStream.range(0, TWO_STEPS_CODE_REFERENCE.size())
 				.forEach(i -> assertThat(steps.get(i).getCodeRef(), allOf(notNullValue(), equalTo(TWO_STEPS_CODE_REFERENCE.get(i)))));

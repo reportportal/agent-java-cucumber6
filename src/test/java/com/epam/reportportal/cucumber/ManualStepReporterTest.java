@@ -1,3 +1,19 @@
+/*
+ * Copyright 2020 EPAM Systems
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.epam.reportportal.cucumber;
 
 import com.epam.reportportal.cucumber.integration.TestScenarioReporter;
@@ -156,6 +172,16 @@ public class ManualStepReporterTest {
 		assertThat(nestedStepFinishes.get(0).getStatus(), equalTo("PASSED"));
 		assertThat(nestedStepFinishes.get(1).getStatus(), equalTo("PASSED"));
 		assertThat(nestedStepFinishes.get(2).getStatus(), equalTo("FAILED"));
+
+		List<FinishTestItemRQ> stepFinishes = IntStream.range(0, finishIds.size())
+				.filter(i -> !stepNestedStepIds.contains(finishIds.get(i)))
+				.mapToObj(finishRqs::get)
+				.collect(Collectors.toList());
+
+		assertThat(stepFinishes.get(0).getStatus(), equalTo("PASSED"));
+		assertThat(stepFinishes.get(1).getStatus(), equalTo("FAILED"));
+		assertThat(stepFinishes.get(2).getStatus(), equalTo("FAILED"));
+		assertThat(stepFinishes.get(3).getStatus(), equalTo("FAILED"));
 	}
 
 	@Test
@@ -214,5 +240,16 @@ public class ManualStepReporterTest {
 		assertThat(nestedStepFinishes.get(0).getStatus(), equalTo("PASSED"));
 		assertThat(nestedStepFinishes.get(1).getStatus(), equalTo("PASSED"));
 		assertThat(nestedStepFinishes.get(2).getStatus(), equalTo("FAILED"));
+
+		List<FinishTestItemRQ> stepFinishes = IntStream.range(0, finishIds.size())
+				.filter(i -> !scenarioSecondNestedStepIds.contains(finishIds.get(i)))
+				.mapToObj(finishRqs::get)
+				.collect(Collectors.toList());
+
+		assertThat(stepFinishes.get(0).getStatus(), equalTo("PASSED"));
+		assertThat(stepFinishes.get(1).getStatus(), equalTo("FAILED"));
+		assertThat(stepFinishes.get(2).getStatus(), equalTo("FAILED"));
+		assertThat(stepFinishes.get(3).getStatus(), equalTo("FAILED"));
+		assertThat(stepFinishes.get(4).getStatus(), equalTo("FAILED"));
 	}
 }

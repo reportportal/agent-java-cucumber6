@@ -1,11 +1,11 @@
 /*
- * Copyright 2018 EPAM Systems
+ * Copyright 2020 EPAM Systems
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,6 +22,7 @@ import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
 import com.epam.reportportal.utils.AttributeParser;
+import com.epam.reportportal.utils.ParameterUtils;
 import com.epam.reportportal.utils.TestCaseIdUtils;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.ParameterResource;
@@ -34,22 +35,22 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rp.com.google.common.collect.ImmutableMap;
-import rp.com.google.common.collect.Lists;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static java.util.Optional.ofNullable;
 
+/**
+ * @author Vadzim Hushchanskou
+ */
 public class Utils {
 	private static final Logger LOGGER = LoggerFactory.getLogger(Utils.class);
 	private static final String TABLE_INDENT = "          ";
@@ -64,13 +65,13 @@ public class Utils {
 	private static final String ONE_SPACE = " ";
 	private static final String HOOK_ = "Hook: ";
 	private static final String NEW_LINE = "\r\n";
+	private static final URI WORKING_DIRECTORY = new File(System.getProperty("user.dir")).toURI();
 
 	private static final String DEFINITION_MATCH_FIELD_NAME = "definitionMatch";
 	private static final String STEP_DEFINITION_FIELD_NAME = "stepDefinition";
 	private static final String GET_LOCATION_METHOD_NAME = "getLocation";
 	private static final String METHOD_OPENING_BRACKET = "(";
 	private static final String METHOD_FIELD_NAME = "method";
-	private static final String PARAMETER_REGEX = "<[^<>]+>";
 
 	private Utils() {
 		throw new AssertionError("No instances should exist for the class!");
@@ -196,16 +197,10 @@ public class Utils {
 	 * @param prefix   - substring to be prepended at the beginning (optional)
 	 * @param infix    - substring to be inserted between keyword and name
 	 * @param argument - main text to process
-	 * @param suffix   - substring to be appended at the end (optional)
 	 * @return transformed string
 	 */
-	//TODO: pass Node as argument, not test event
-	static String buildNodeName(String prefix, String infix, String argument, String suffix) {
-		return buildName(prefix, infix, argument, suffix);
-	}
-
-	private static String buildName(String prefix, String infix, String argument, String suffix) {
-		return (prefix == null ? EMPTY : prefix) + infix + argument + (suffix == null ? EMPTY : suffix);
+	public static String buildName(@Nullable String prefix, @Nonnull String infix, @Nonnull String argument) {
+		return (prefix == null ? EMPTY : prefix) + infix + argument;
 	}
 
 	/**
@@ -292,30 +287,17 @@ public class Utils {
 		}
 	}
 
-	static List<ParameterResource> getParameters(List<Argument> arguments, String text) {
-		List<ParameterResource> parameters = Lists.newArrayList();
-		ArrayList<String> parameterNames = Lists.newArrayList();
-		Matcher matcher = Pattern.compile(PARAMETER_REGEX).matcher(text);
-		while (matcher.find()) {
-			parameterNames.add(text.substring(matcher.start() + 1, matcher.end() - 1));
-		}
-		IntStream.range(0, parameterNames.size()).forEach(index -> {
-			String parameterName = parameterNames.get(index);
-			if (index < arguments.size()) {
-				Argument argument = arguments.get(index);
-				String parameterValue = argument.getValue();
-				ParameterResource parameterResource = new ParameterResource();
-				parameterResource.setKey(parameterName);
-				if ("string".equals(argument.getParameterTypeName())) {
-					parameterResource.setValue(parameterValue.trim()
-							.substring(1, parameterValue.length() - 1)); // strip mandatory string quotes
-				} else {
-					parameterResource.setValue(parameterValue);
-				}
-				parameters.add(parameterResource);
-			}
-		});
-		return parameters;
+	@Nonnull
+	public static String getCodeRef(@Nonnull URI uri, int line) {
+		return WORKING_DIRECTORY.relativize(uri) + ":" + line;
+	}
+
+	@Nonnull
+	static List<ParameterResource> getParameters(@Nullable String codeRef, @Nullable List<Argument> arguments) {
+		List<Pair<String, String>> params = ofNullable(arguments).map(a -> a.stream()
+				.map(arg -> Pair.of(arg.getParameterTypeName(), arg.getValue()))
+				.collect(Collectors.toList())).orElse(null);
+		return ParameterUtils.getParameters(codeRef, params);
 	}
 
 	private static Method retrieveMethod(Field definitionMatchField, TestStep testStep)
@@ -380,11 +362,6 @@ public class Utils {
 		return uri.toString();
 	}
 
-	@Nonnull
-	public static String getCodeRef(@Nonnull URI uri, int line) {
-		return uri + ":" + line;
-	}
-
 	public static Pair<String, String> getHookTypeAndName(HookType hookType) {
 		String name = null;
 		String type = null;
@@ -407,24 +384,5 @@ public class Utils {
 				break;
 		}
 		return Pair.of(type, name);
-	}
-
-	public static StartTestItemRQ buildStartStepRequest(String stepPrefix, TestStep testStep, Messages.GherkinDocument.Feature.Step step,
-			boolean hasStats) {
-		StartTestItemRQ rq = new StartTestItemRQ();
-		rq.setHasStats(hasStats);
-		rq.setName(Utils.buildNodeName(stepPrefix, step.getKeyword(), Utils.getStepName(testStep), ""));
-		rq.setDescription(Utils.buildMultilineArgument(testStep));
-		rq.setStartTime(Calendar.getInstance().getTime());
-		rq.setType("STEP");
-		String codeRef = Utils.getCodeRef(testStep);
-		List<Argument> arguments = testStep instanceof PickleStepTestStep ?
-				((PickleStepTestStep) testStep).getDefinitionArgument() :
-				Collections.emptyList();
-		rq.setParameters(Utils.getParameters(arguments, step.getText()));
-		rq.setCodeRef(codeRef);
-		rq.setTestCaseId(ofNullable(Utils.getTestCaseId(testStep, codeRef)).map(TestCaseIdEntry::getId).orElse(null));
-		rq.setAttributes(Utils.getAttributes(testStep));
-		return rq;
 	}
 }
