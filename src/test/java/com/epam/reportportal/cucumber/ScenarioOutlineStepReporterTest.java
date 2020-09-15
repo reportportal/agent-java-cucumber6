@@ -31,7 +31,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -73,15 +72,6 @@ public class ScenarioOutlineStepReporterTest {
 		TestScenarioReporter.RP.set(reportPortal);
 		TestStepReporter.RP.set(reportPortal);
 	}
-
-	public static final List<Pair<String, Object>> PARAMETERS = Arrays.asList(
-			Pair.of("java.lang.String", "\"first\""),
-			Pair.of("int", 123),
-			Pair.of("java.lang.String", "\"second\""),
-			Pair.of("int", 12345),
-			Pair.of("java.lang.String", "\"third\""),
-			Pair.of("int", 12345678)
-	);
 
 	// Do not add iteration indexes / numbers, since it breaks re-runs
 	@Test
