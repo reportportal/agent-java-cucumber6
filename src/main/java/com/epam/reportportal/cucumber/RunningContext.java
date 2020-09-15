@@ -23,7 +23,9 @@ import io.cucumber.messages.IdGenerator;
 import io.cucumber.messages.Messages;
 import io.cucumber.plugin.event.*;
 import io.reactivex.Maybe;
+import org.apache.commons.lang3.tuple.Pair;
 
+import javax.annotation.Nonnull;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,6 +52,7 @@ public class RunningContext {
 		private final Messages.GherkinDocument.Feature currentFeature;
 		private final Set<ItemAttributesRQ> attributes;
 		private Maybe<String> currentFeatureId;
+		private RuleContext rule;
 
 		public FeatureContext(TestCase testCase) {
 			TestSourceRead event = PATH_TO_READ_EVENT_MAP.get(testCase.getUri());
@@ -63,14 +66,15 @@ public class RunningContext {
 		}
 
 		public ScenarioContext getScenarioContext(TestCase testCase) {
-			Messages.GherkinDocument.Feature.Scenario scenario = getScenario(testCase);
+			Pair<Messages.GherkinDocument.Feature.Scenario, RuleContext> scenario = getScenario(testCase);
 			ScenarioContext context = new ScenarioContext();
 			context.processTags(testCase.getTags());
-			context.processScenario(scenario);
+			context.processScenario(scenario.getKey());
 			context.setTestCase(testCase);
 			context.processBackground(getBackground());
-			context.processScenarioOutline(scenario);
+			context.processScenarioOutline(scenario.getKey());
 			context.setFeatureUri(getUri());
+			context.setRule(scenario.getValue());
 			return context;
 		}
 
@@ -106,29 +110,65 @@ public class RunningContext {
 			this.currentFeatureId = featureId;
 		}
 
-		@SuppressWarnings("unchecked")
-		public <T extends Messages.GherkinDocument.Feature.Scenario> T getScenario(TestCase testCase) {
-			List<Messages.GherkinDocument.Feature.FeatureChild> featureScenarios = getFeature().getChildrenList();
-			for (Messages.GherkinDocument.Feature.FeatureChild child : featureScenarios) {
-				if (!child.hasScenario()) {
-					continue;
+		public Pair<Messages.GherkinDocument.Feature.Scenario, RuleContext> getScenario(TestCase testCase) {
+			List<Messages.GherkinDocument.Feature.FeatureChild> featureChildren = getFeature().getChildrenList();
+			for (Messages.GherkinDocument.Feature.FeatureChild child : featureChildren) {
+				if (child.hasScenario()) {
+					Messages.GherkinDocument.Feature.Scenario result = getScenario(child.getScenario(), testCase);
+					if (result != null) {
+						return Pair.of(result, null);
+					}
+					return Pair.of(getScenario(child.getScenario(), testCase), null);
 				}
-				Messages.GherkinDocument.Feature.Scenario scenario = child.getScenario();
-				if (testCase.getLocation().getLine() == scenario.getLocation().getLine() && testCase.getName().equals(scenario.getName())) {
-					return (T) scenario;
-				} else {
-					if (scenario.getExamplesCount() > 0) {
-						for (Messages.GherkinDocument.Feature.Scenario.Examples example : scenario.getExamplesList()) {
-							for (Messages.GherkinDocument.Feature.TableRow tableRow : example.getTableBodyList()) {
-								if (tableRow.getLocation().getLine() == testCase.getLocation().getLine()) {
-									return (T) scenario;
-								}
+				if (child.hasRule()) {
+					Messages.GherkinDocument.Feature.FeatureChild.Rule rule = child.getRule();
+					Messages.GherkinDocument.Feature.Scenario result = getScenario(rule, testCase);
+					if (result != null) {
+						return Pair.of(result, new RuleContext(getUri(), rule, testCase));
+					}
+				}
+			}
+			throw new IllegalStateException("Scenario can't be null!");
+		}
+
+		public Messages.GherkinDocument.Feature.Scenario getScenario(Messages.GherkinDocument.Feature.Scenario scenario,
+				TestCase testCase) {
+			if (testCase.getLocation().getLine() == scenario.getLocation().getLine() && testCase.getName().equals(scenario.getName())) {
+				return scenario;
+			} else {
+				if (scenario.getExamplesCount() > 0) {
+					for (Messages.GherkinDocument.Feature.Scenario.Examples example : scenario.getExamplesList()) {
+						for (Messages.GherkinDocument.Feature.TableRow tableRow : example.getTableBodyList()) {
+							if (tableRow.getLocation().getLine() == testCase.getLocation().getLine()) {
+								return scenario;
 							}
 						}
 					}
 				}
 			}
-			throw new IllegalStateException("Scenario can't be null!");
+			return null;
+		}
+
+		public Messages.GherkinDocument.Feature.Scenario getScenario(Messages.GherkinDocument.Feature.FeatureChild.Rule rule,
+				TestCase testCase) {
+			List<Messages.GherkinDocument.Feature.FeatureChild.RuleChild> ruleChildren = rule.getChildrenList();
+			for (Messages.GherkinDocument.Feature.FeatureChild.RuleChild child : ruleChildren) {
+				if (child.hasScenario()) {
+					Messages.GherkinDocument.Feature.Scenario result = getScenario(child.getScenario(), testCase);
+					if (result != null) {
+						return result;
+					}
+				}
+			}
+			return null;
+		}
+
+		public void setCurrentRule(RuleContext rule) {
+			this.rule = rule;
+		}
+
+		public RuleContext getCurrentRule() {
+			return rule;
 		}
 	}
 
@@ -149,6 +189,7 @@ public class RunningContext {
 		private String outlineIteration;
 		private URI uri;
 		private String text;
+		private RuleContext rule;
 
 		public void processScenario(Messages.GherkinDocument.Feature.Scenario scenario) {
 			this.scenario = scenario;
@@ -303,6 +344,87 @@ public class RunningContext {
 
 		public String getCurrentText() {
 			return text;
+		}
+
+		public void setRule(RuleContext rule) {
+			this.rule = rule;
+		}
+
+		public RuleContext getRule() {
+			return rule;
+		}
+	}
+
+	public static class RuleContext {
+		private final String name;
+		private final String description;
+		private final String keyword;
+		private final Set<ItemAttributesRQ> attributes;
+		private final int line;
+		private final URI uri;
+		private Maybe<String> id;
+
+		public RuleContext(@Nonnull URI featureUri, @Nonnull Messages.GherkinDocument.Feature.FeatureChild.Rule rule,
+				@Nonnull TestCase testCase) {
+			name = rule.getName();
+			description = rule.getDescription();
+			keyword = rule.getKeyword();
+			attributes = Utils.extractAttributes(testCase.getTags());
+			line = rule.getLocation().getLine();
+			uri = featureUri;
+		}
+
+		@Nonnull
+		public String getName() {
+			return name;
+		}
+
+		public String getDescription() {
+			return description;
+		}
+
+		@Nonnull
+		public String getKeyword() {
+			return keyword;
+		}
+
+		public Set<ItemAttributesRQ> getAttributes() {
+			return attributes;
+		}
+
+		@Nonnull
+		public int getLine() {
+			return line;
+		}
+
+		@Nonnull
+		public URI getUri() {
+			return uri;
+		}
+
+		public Maybe<String> getId() {
+			return id;
+		}
+
+		public void setId(Maybe<String> id) {
+			this.id = id;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (!(o instanceof RuleContext)) {
+				return false;
+			}
+			RuleContext that = (RuleContext) o;
+			return line == that.line && uri.equals(that.uri);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(line, uri);
 		}
 	}
 }

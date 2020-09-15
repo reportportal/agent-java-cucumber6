@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 ### Added
+- 'Rule' keyword support
 - Callback reporting
 ### Changed
 - CodeRef is now relative

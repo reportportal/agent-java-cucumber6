@@ -16,6 +16,7 @@
 
 package com.epam.reportportal.cucumber.integration.feature;
 
+import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -38,5 +39,10 @@ public class EmptySteps {
 	@When("I have one more empty step")
 	public void i_have_one_more_empty_step() {
 		LOGGER.info("I have one more empty step'");
+	}
+
+	@And("I have one more else empty step")
+	public void i_have_one_more_else_empty_step() {
+		LOGGER.info("I have one more else empty step'");
 	}
 }

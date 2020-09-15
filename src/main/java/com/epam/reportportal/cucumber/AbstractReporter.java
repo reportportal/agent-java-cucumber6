@@ -42,6 +42,7 @@ import rp.com.google.common.base.Suppliers;
 import rp.com.google.common.io.ByteSource;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
@@ -160,6 +161,31 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 				.put(createKey(scenarioContext.getLine()), TestItemTree.createTestItemLeaf(scenarioContext.getId(), DEFAULT_CAPACITY)));
 	}
 
+	protected void startRule(@Nonnull RunningContext.FeatureContext featureContext, @Nonnull RunningContext.RuleContext ruleContext) {
+		Maybe<String> id = Utils.startNonLeafNode(
+				launch.get(),
+				featureContext.getFeatureId(),
+				Utils.buildNodeName(ruleContext.getKeyword(), AbstractReporter.COLON_INFIX, ruleContext.getName(), null),
+				ruleContext.getDescription(),
+				getCodeRef(ruleContext.getUri(), ruleContext.getLine()),
+				ruleContext.getAttributes(),
+				"SUITE"
+		);
+		ruleContext.setId(id);
+	}
+
+	protected void finishRule(@Nonnull RunningContext.RuleContext context) {
+		finishRule(context, null);
+	}
+
+	protected void finishRule(@Nonnull RunningContext.RuleContext context, @Nullable Date completionTime) {
+		if (completionTime == null) {
+			Utils.finishTestItem(launch.get(), context.getId());
+		} else {
+			Utils.finishFeature(launch.get(), context.getId(), completionTime);
+		}
+	}
+
 	/**
 	 * Start Cucumber scenario
 	 */
@@ -167,10 +193,32 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 			String scenarioName) {
 		String description = getDescription(featureContext.getUri());
 		String codeRef = getCodeRef(featureContext.getUri(), scenarioContext.getLine());
+		RunningContext.RuleContext rule = scenarioContext.getRule();
+		RunningContext.RuleContext currentRule = featureContext.getCurrentRule();
+		if (currentRule == null) {
+			if (rule != null) {
+				startRule(featureContext, rule);
+				featureContext.setCurrentRule(rule);
+			}
+		} else {
+			if (rule == null) {
+				finishRule(currentRule);
+				featureContext.setCurrentRule(null);
+			} else {
+				if (currentRule.equals(rule)) {
+					rule = currentRule; // inherit parent id
+				} else {
+					finishRule(currentRule);
+					startRule(featureContext, rule);
+					featureContext.setCurrentRule(rule);
+				}
+			}
+		}
+
 		Launch myLaunch = launch.get();
 		Maybe<String> id = Utils.startNonLeafNode(
 				myLaunch,
-				featureContext.getFeatureId(),
+				rule == null ? featureContext.getFeatureId() : rule.getId(),
 				scenarioName,
 				description,
 				codeRef,
@@ -501,6 +549,10 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	protected void handleEndOfFeature() {
 		currentFeatureContextMap.values().forEach(f -> {
 			Date featureCompletionDateTime = featureEndTime.get(f.getUri());
+			RunningContext.RuleContext currentRule = f.getCurrentRule();
+			if (currentRule != null) {
+				finishRule(currentRule, featureCompletionDateTime);
+			}
 			Utils.finishFeature(launch.get(), f.getFeatureId(), featureCompletionDateTime);
 			removeFromTree(f);
 		});
