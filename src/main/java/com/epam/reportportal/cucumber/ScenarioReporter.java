@@ -104,7 +104,7 @@ public class ScenarioReporter extends AbstractReporter {
 	 * Finish root suite
 	 */
 	protected void finishRootItem() {
-		Utils.finishTestItem(launch.get(), rootSuiteId.get());
+		finishTestItem(rootSuiteId.get());
 		rootSuiteId = null;
 	}
 

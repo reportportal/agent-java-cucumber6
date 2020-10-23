@@ -15,35 +15,17 @@
  */
 package com.epam.reportportal.cucumber;
 
-import com.epam.reportportal.annotations.TestCaseId;
-import com.epam.reportportal.annotations.attribute.Attributes;
 import com.epam.reportportal.listeners.ItemStatus;
-import com.epam.reportportal.service.Launch;
-import com.epam.reportportal.service.ReportPortal;
-import com.epam.reportportal.service.item.TestCaseIdEntry;
-import com.epam.reportportal.utils.AttributeParser;
-import com.epam.reportportal.utils.ParameterUtils;
-import com.epam.reportportal.utils.TestCaseIdUtils;
-import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
-import com.epam.ta.reportportal.ws.model.ParameterResource;
-import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
-import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
-import io.cucumber.messages.Messages;
-import io.cucumber.plugin.event.*;
-import io.reactivex.Maybe;
-import org.apache.commons.lang3.tuple.Pair;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.cucumber.plugin.event.Argument;
+import io.cucumber.plugin.event.Status;
+import io.cucumber.plugin.event.TestStep;
 import rp.com.google.common.collect.ImmutableMap;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.File;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.URI;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static java.util.Optional.ofNullable;
@@ -52,25 +34,10 @@ import static java.util.Optional.ofNullable;
  * @author Vadzim Hushchanskou
  */
 public class Utils {
-	private static final Logger LOGGER = LoggerFactory.getLogger(Utils.class);
-	private static final String TABLE_INDENT = "          ";
-	private static final String TABLE_SEPARATOR = "|";
-	private static final String DOCSTRING_DECORATOR = "\n\"\"\"\n";
-	private static final String PASSED = "passed";
-	private static final String SKIPPED = "skipped";
-	private static final String INFO = "INFO";
-	private static final String WARN = "WARN";
-	private static final String ERROR = "ERROR";
 	private static final String EMPTY = "";
-	private static final String ONE_SPACE = " ";
-	private static final String HOOK_ = "Hook: ";
-	private static final String NEW_LINE = "\r\n";
-	private static final URI WORKING_DIRECTORY = new File(System.getProperty("user.dir")).toURI();
 
 	private static final String DEFINITION_MATCH_FIELD_NAME = "definitionMatch";
 	private static final String STEP_DEFINITION_FIELD_NAME = "stepDefinition";
-	private static final String GET_LOCATION_METHOD_NAME = "getLocation";
-	private static final String METHOD_OPENING_BRACKET = "(";
 	private static final String METHOD_FIELD_NAME = "method";
 
 	private Utils() {
@@ -78,7 +45,7 @@ public class Utils {
 	}
 
 	//@formatter:off
-    private static final Map<Status, ItemStatus> STATUS_MAPPING = ImmutableMap.<Status, ItemStatus>builder()
+	public static final Map<Status, ItemStatus> STATUS_MAPPING = ImmutableMap.<Status, ItemStatus>builder()
             .put(Status.PASSED, ItemStatus.PASSED)
             .put(Status.FAILED, ItemStatus.FAILED)
             .put(Status.SKIPPED, ItemStatus.SKIPPED)
@@ -86,110 +53,16 @@ public class Utils {
             .put(Status.AMBIGUOUS, ItemStatus.SKIPPED)
             .put(Status.UNDEFINED, ItemStatus.SKIPPED)
             .put(Status.UNUSED, ItemStatus.SKIPPED).build();
+
+	public static final Map<Status, String> LOG_LEVEL_MAPPING = ImmutableMap.<Status, String>builder()
+			.put(Status.PASSED, "INFO")
+			.put(Status.FAILED, "ERROR")
+			.put(Status.SKIPPED, "WARN")
+			.put(Status.PENDING, "WARN")
+			.put(Status.AMBIGUOUS, "WARN")
+			.put(Status.UNDEFINED, "WARN")
+			.put(Status.UNUSED, "WARN").build();
     //@formatter:on
-
-	static void finishFeature(Launch rp, Maybe<String> itemId, Date dateTime) {
-		if (itemId == null) {
-			LOGGER.error("BUG: Trying to finish unspecified test item.");
-			return;
-		}
-		FinishTestItemRQ rq = new FinishTestItemRQ();
-		rq.setEndTime(dateTime);
-		rp.finishTestItem(itemId, rq);
-	}
-
-	static void finishTestItem(Launch rp, Maybe<String> itemId) {
-		finishTestItem(rp, itemId, null);
-	}
-
-	static Date finishTestItem(Launch rp, Maybe<String> itemId, Status status) {
-		if (itemId == null) {
-			LOGGER.error("BUG: Trying to finish unspecified test item.");
-			return null;
-		}
-		FinishTestItemRQ rq = new FinishTestItemRQ();
-		Date endTime = Calendar.getInstance().getTime();
-		rq.setEndTime(endTime);
-		rq.setStatus(mapItemStatus(status));
-		rp.finishTestItem(itemId, rq);
-		return endTime;
-	}
-
-	static Maybe<String> startNonLeafNode(Launch rp, Maybe<String> rootItemId, String name, String description, String codeRef,
-			Set<ItemAttributesRQ> attributes, String type) {
-		StartTestItemRQ rq = new StartTestItemRQ();
-		rq.setDescription(description);
-		rq.setCodeRef(codeRef);
-		rq.setName(name);
-		rq.setAttributes(attributes);
-		rq.setStartTime(Calendar.getInstance().getTime());
-		rq.setType(type);
-		if ("STEP".equals(type)) {
-			rq.setTestCaseId(ofNullable(Utils.getTestCaseId(codeRef, null)).map(TestCaseIdEntry::getId).orElse(null));
-		}
-
-		return rp.startTestItem(rootItemId, rq);
-	}
-
-	static void sendLog(final String message, final String level) {
-		ReportPortal.emitLog(message, level, Calendar.getInstance().getTime());
-	}
-
-	/**
-	 * Transform tags from Cucumber to RP format
-	 *
-	 * @param tags - Cucumber tags
-	 * @return set of tags
-	 */
-	public static Set<ItemAttributesRQ> extractAttributes(List<?> tags) {
-		return tags.stream().map(s -> {
-			String tagValue;
-			if (s instanceof Messages.GherkinDocument.Feature.Tag) {
-				tagValue = ((Messages.GherkinDocument.Feature.Tag) s).getName();
-			} else {
-				tagValue = s.toString();
-			}
-			return new ItemAttributesRQ(null, tagValue);
-		}).collect(Collectors.toSet());
-	}
-
-	/**
-	 * Map Cucumber statuses to RP log levels
-	 *
-	 * @param cukesStatus - Cucumber status
-	 * @return regular log level
-	 */
-	static String mapLevel(String cukesStatus) {
-		String mapped;
-		if (cukesStatus.equalsIgnoreCase(PASSED)) {
-			mapped = INFO;
-		} else if (cukesStatus.equalsIgnoreCase(SKIPPED)) {
-			mapped = WARN;
-		} else {
-			mapped = ERROR;
-		}
-		return mapped;
-	}
-
-	/**
-	 * Map Cucumber statuses to RP item statuses
-	 *
-	 * @param status - Cucumber status
-	 * @return RP test item status and null if status is null
-	 */
-	static String mapItemStatus(Status status) {
-		if (status == null) {
-			return null;
-		} else {
-			if (STATUS_MAPPING.get(status) == null) {
-				LOGGER.error(String.format("Unable to find direct mapping between Cucumber and ReportPortal for TestItem with status: '%s'.",
-						status
-				));
-				return ItemStatus.SKIPPED.name();
-			}
-			return STATUS_MAPPING.get(status).name();
-		}
-	}
 
 	/**
 	 * Generate name representation
@@ -199,109 +72,11 @@ public class Utils {
 	 * @param argument - main text to process
 	 * @return transformed string
 	 */
-	public static String buildName(@Nullable String prefix, @Nonnull String infix, @Nonnull String argument) {
+	public static String buildName(@Nullable String prefix, @Nullable String infix, @Nullable String argument) {
 		return (prefix == null ? EMPTY : prefix) + infix + argument;
 	}
 
-	/**
-	 * Generate multiline argument (DataTable or DocString) representation
-	 *
-	 * @param step - Cucumber step object
-	 * @return - transformed multiline argument (or empty string if there is
-	 * none)
-	 */
-	static String buildMultilineArgument(TestStep step) {
-		List<List<String>> table = null;
-		String dockString = EMPTY;
-		PickleStepTestStep pickleStep = (PickleStepTestStep) step;
-		if (pickleStep.getStep().getArgument() != null) {
-			StepArgument argument = pickleStep.getStep().getArgument();
-			if (argument instanceof DocStringArgument) {
-				dockString = ((DocStringArgument) argument).getContent();
-			} else if (argument instanceof DataTableArgument) {
-				table = ((DataTableArgument) argument).cells();
-			}
-		}
-
-		StringBuilder marg = new StringBuilder();
-		if (table != null) {
-			marg.append(NEW_LINE);
-			for (List<String> row : table) {
-				marg.append(TABLE_INDENT).append(TABLE_SEPARATOR);
-				for (String cell : row) {
-					marg.append(ONE_SPACE).append(cell).append(ONE_SPACE).append(TABLE_SEPARATOR);
-				}
-				marg.append(NEW_LINE);
-			}
-		}
-
-		if (!dockString.isEmpty()) {
-			marg.append(DOCSTRING_DECORATOR).append(dockString).append(DOCSTRING_DECORATOR);
-		}
-		return marg.toString();
-	}
-
-	static String getStepName(TestStep step) {
-		return step instanceof HookTestStep ?
-				HOOK_ + ((HookTestStep) step).getHookType().toString() :
-				((PickleStepTestStep) step).getStep().getText();
-	}
-
-	@Nullable
-	public static Set<ItemAttributesRQ> getAttributes(TestStep testStep) {
-		Field definitionMatchField = getDefinitionMatchField(testStep);
-		if (definitionMatchField != null) {
-			try {
-				Method method = retrieveMethod(definitionMatchField, testStep);
-				Attributes attributesAnnotation = method.getAnnotation(Attributes.class);
-				if (attributesAnnotation != null) {
-					return AttributeParser.retrieveAttributes(attributesAnnotation);
-				}
-			} catch (NoSuchFieldException | IllegalAccessException e) {
-				return null;
-			}
-		}
-		return null;
-	}
-
-	@Nullable
-	public static String getCodeRef(TestStep testStep) {
-		Field definitionMatchField = getDefinitionMatchField(testStep);
-
-		if (definitionMatchField != null) {
-			try {
-				Object stepDefinitionMatch = definitionMatchField.get(testStep);
-				Field stepDefinitionField = stepDefinitionMatch.getClass().getDeclaredField(STEP_DEFINITION_FIELD_NAME);
-				stepDefinitionField.setAccessible(true);
-				Object javaStepDefinition = stepDefinitionField.get(stepDefinitionMatch);
-				Method getLocationMethod = javaStepDefinition.getClass().getMethod(GET_LOCATION_METHOD_NAME);
-				getLocationMethod.setAccessible(true);
-				String fullCodeRef = String.valueOf(getLocationMethod.invoke(javaStepDefinition));
-				return fullCodeRef != null ? fullCodeRef.substring(0, fullCodeRef.indexOf(METHOD_OPENING_BRACKET)) : null;
-			} catch (NoSuchFieldException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-				return null;
-			}
-
-		} else {
-			return null;
-		}
-	}
-
-	@Nonnull
-	public static String getCodeRef(@Nonnull URI uri, int line) {
-		return WORKING_DIRECTORY.relativize(uri) + ":" + line;
-	}
-
-	@Nonnull
-	static List<ParameterResource> getParameters(@Nullable String codeRef, @Nullable List<Argument> arguments) {
-		List<Pair<String, String>> params = ofNullable(arguments).map(a -> a.stream()
-				.map(arg -> Pair.of(arg.getParameterTypeName(), arg.getValue()))
-				.collect(Collectors.toList())).orElse(null);
-		return ParameterUtils.getParameters(codeRef, params);
-	}
-
-	private static Method retrieveMethod(Field definitionMatchField, TestStep testStep)
-			throws IllegalAccessException, NoSuchFieldException {
+	public static Method retrieveMethod(Field definitionMatchField, TestStep testStep) throws IllegalAccessException, NoSuchFieldException {
 		Object stepDefinitionMatch = definitionMatchField.get(testStep);
 		Field stepDefinitionField = stepDefinitionMatch.getClass().getDeclaredField(STEP_DEFINITION_FIELD_NAME);
 		stepDefinitionField.setAccessible(true);
@@ -311,33 +86,10 @@ public class Utils {
 		return (Method) methodField.get(javaStepDefinition);
 	}
 
-	private static final java.util.function.Function<List<Argument>, List<?>> ARGUMENTS_TRANSFORM = arguments -> ofNullable(arguments).map(
+	public static final java.util.function.Function<List<Argument>, List<?>> ARGUMENTS_TRANSFORM = arguments -> ofNullable(arguments).map(
 			args -> args.stream().map(Argument::getValue).collect(Collectors.toList())).orElse(null);
 
-	@SuppressWarnings("unchecked")
-	public static TestCaseIdEntry getTestCaseId(TestStep testStep, String codeRef) {
-		Field definitionMatchField = getDefinitionMatchField(testStep);
-		List<Argument> arguments = ((PickleStepTestStep) testStep).getDefinitionArgument();
-		if (definitionMatchField != null) {
-			try {
-				Method method = retrieveMethod(definitionMatchField, testStep);
-				return TestCaseIdUtils.getTestCaseId(method.getAnnotation(TestCaseId.class),
-						method,
-						codeRef,
-						(List<Object>) ARGUMENTS_TRANSFORM.apply(arguments)
-				);
-			} catch (NoSuchFieldException | IllegalAccessException ignore) {
-			}
-		}
-		return getTestCaseId(codeRef, arguments);
-	}
-
-	@SuppressWarnings("unchecked")
-	private static TestCaseIdEntry getTestCaseId(String codeRef, List<Argument> arguments) {
-		return TestCaseIdUtils.getTestCaseId(codeRef, (List<Object>) ARGUMENTS_TRANSFORM.apply(arguments));
-	}
-
-	private static Field getDefinitionMatchField(TestStep testStep) {
+	public static Field getDefinitionMatchField(TestStep testStep) {
 		Class<?> clazz = testStep.getClass();
 		try {
 			return clazz.getField(DEFINITION_MATCH_FIELD_NAME);
@@ -355,34 +107,5 @@ public class Utils {
 
 			return null;
 		}
-	}
-
-	@Nonnull
-	public static String getDescription(@Nonnull URI uri) {
-		return uri.toString();
-	}
-
-	public static Pair<String, String> getHookTypeAndName(HookType hookType) {
-		String name = null;
-		String type = null;
-		switch (hookType) {
-			case BEFORE:
-				name = "Before hooks";
-				type = "BEFORE_TEST";
-				break;
-			case AFTER:
-				name = "After hooks";
-				type = "AFTER_TEST";
-				break;
-			case AFTER_STEP:
-				name = "After step";
-				type = "AFTER_METHOD";
-				break;
-			case BEFORE_STEP:
-				name = "Before step";
-				type = "BEFORE_METHOD";
-				break;
-		}
-		return Pair.of(type, name);
 	}
 }

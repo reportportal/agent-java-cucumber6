@@ -1,6 +1,11 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- Docstring parameter handling
+### Changed
+- Many static methods from Util class were moved to AbstractReporter class and made protected to ease extension
+- Client version updated on `5.0.12`
 
 ## [5.0.0-RC-1]
 ### Added

@@ -15,7 +15,6 @@
  */
 package com.epam.reportportal.cucumber;
 
-import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import io.cucumber.gherkin.GherkinDocumentBuilder;
 import io.cucumber.gherkin.Parser;
 import io.cucumber.gherkin.TokenMatcher;
@@ -50,7 +49,6 @@ public class RunningContext {
 		private static final Map<URI, TestSourceRead> PATH_TO_READ_EVENT_MAP = new ConcurrentHashMap<>();
 		private final URI currentFeatureUri;
 		private final Messages.GherkinDocument.Feature currentFeature;
-		private final Set<ItemAttributesRQ> attributes;
 		private Maybe<String> currentFeatureId;
 		private RuleContext rule;
 
@@ -58,7 +56,6 @@ public class RunningContext {
 			TestSourceRead event = PATH_TO_READ_EVENT_MAP.get(testCase.getUri());
 			currentFeature = getFeature(event.getSource());
 			currentFeatureUri = event.getUri();
-			attributes = Utils.extractAttributes(currentFeature.getTagsList());
 		}
 
 		public static void addTestSourceReadEvent(URI uri, TestSourceRead event) {
@@ -68,7 +65,6 @@ public class RunningContext {
 		public ScenarioContext getScenarioContext(TestCase testCase) {
 			Pair<Messages.GherkinDocument.Feature.Scenario, RuleContext> scenario = getScenario(testCase);
 			ScenarioContext context = new ScenarioContext();
-			context.processTags(testCase.getTags());
 			context.processScenario(scenario.getKey());
 			context.setTestCase(testCase);
 			context.processBackground(getBackground());
@@ -92,10 +88,6 @@ public class RunningContext {
 
 		public Messages.GherkinDocument.Feature getFeature() {
 			return currentFeature;
-		}
-
-		public Set<ItemAttributesRQ> getAttributes() {
-			return attributes;
 		}
 
 		public URI getUri() {
@@ -176,7 +168,6 @@ public class RunningContext {
 
 		private final Queue<Messages.GherkinDocument.Feature.Step> backgroundSteps = new ArrayDeque<>();
 		private final Map<Integer, Messages.GherkinDocument.Feature.Step> scenarioLocationMap = new HashMap<>();
-		private Set<ItemAttributesRQ> attributes = new HashSet<>();
 		private Maybe<String> currentStepId;
 		private Maybe<String> hookStepId;
 		private Status hookStatus;
@@ -206,12 +197,10 @@ public class RunningContext {
 			}
 		}
 
-		public Set<ItemAttributesRQ> getAttributes() {
-			return attributes;
-		}
-
 		/**
 		 * Takes the serial number of scenario outline and links it to the executing scenario
+		 *
+		 * @param scenarioOutline Cucumber's ScenarioDefinition object
 		 **/
 		public void processScenarioOutline(Messages.GherkinDocument.Feature.Scenario scenarioOutline) {
 			if (isScenarioOutline(scenarioOutline)) {
@@ -225,15 +214,12 @@ public class RunningContext {
 				int iterationIdx = IntStream.range(0, scenarioOutlineMap.get(scenarioOutline).size())
 						.filter(i -> getLine() == scenarioOutlineMap.get(scenarioOutline).get(i))
 						.findFirst()
-						.orElseThrow(() -> new IllegalStateException(String.format("No outline iteration number found for scenario %s",
-								Utils.getCodeRef(uri, getLine())
+						.orElseThrow(() -> new IllegalStateException(String.format("No outline iteration number found for scenario %s:%s",
+								uri,
+								getLine()
 						)));
 				outlineIteration = String.format("[%d]", iterationIdx + 1);
 			}
-		}
-
-		public void processTags(List<String> tags) {
-			attributes = Utils.extractAttributes(tags);
 		}
 
 		public void mapBackgroundSteps(Messages.GherkinDocument.Feature.Background background) {
@@ -352,23 +338,27 @@ public class RunningContext {
 		public RuleContext getRule() {
 			return rule;
 		}
+
+		public TestCase getTestCase() {
+			return testCase;
+		}
 	}
 
 	public static class RuleContext {
 		private final String name;
 		private final String description;
 		private final String keyword;
-		private final Set<ItemAttributesRQ> attributes;
 		private final int line;
 		private final URI uri;
+		private final TestCase testCase;
 		private Maybe<String> id;
 
 		public RuleContext(@Nonnull URI featureUri, @Nonnull Messages.GherkinDocument.Feature.FeatureChild.Rule rule,
-				@Nonnull TestCase testCase) {
+				@Nonnull TestCase ruleTestCase) {
+			testCase = ruleTestCase;
 			name = rule.getName();
 			description = rule.getDescription();
 			keyword = rule.getKeyword();
-			attributes = Utils.extractAttributes(testCase.getTags());
 			line = rule.getLocation().getLine();
 			uri = featureUri;
 		}
@@ -387,10 +377,6 @@ public class RunningContext {
 			return keyword;
 		}
 
-		public Set<ItemAttributesRQ> getAttributes() {
-			return attributes;
-		}
-
 		public int getLine() {
 			return line;
 		}
@@ -406,6 +392,10 @@ public class RunningContext {
 
 		public void setId(Maybe<String> id) {
 			this.id = id;
+		}
+
+		public TestCase getTestCase() {
+			return testCase;
 		}
 
 		@Override
