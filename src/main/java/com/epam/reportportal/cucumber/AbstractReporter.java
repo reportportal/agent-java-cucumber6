@@ -82,7 +82,6 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractReporter.class);
 	private static final URI WORKING_DIRECTORY = new File(System.getProperty("user.dir")).toURI();
 	private static final String AGENT_PROPERTIES_FILE = "agent.properties";
-	private static final int DEFAULT_CAPACITY = 16;
 	private static final String STEP_DEFINITION_FIELD_NAME = "stepDefinition";
 	private static final String GET_LOCATION_METHOD_NAME = "getLocation";
 	private static final String METHOD_OPENING_BRACKET = "(";
@@ -181,7 +180,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 
 	private void addToTree(RunningContext.FeatureContext featureContext, RunningContext.ScenarioContext scenarioContext) {
 		retrieveLeaf(featureContext.getUri(), ITEM_TREE).ifPresent(suiteLeaf -> suiteLeaf.getChildItems()
-				.put(createKey(scenarioContext.getLine()), TestItemTree.createTestItemLeaf(scenarioContext.getId(), DEFAULT_CAPACITY)));
+				.put(createKey(scenarioContext.getLine()), TestItemTree.createTestItemLeaf(scenarioContext.getId())));
 	}
 
 	/**
@@ -601,8 +600,8 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	}
 
 	private RunningContext.FeatureContext startFeatureContext(RunningContext.FeatureContext context) {
-		StartTestItemRQ rq = buildStartFeatureRequest(context.getFeature(), context.getUri());
 		Optional<Maybe<String>> root = getRootItemId();
+		StartTestItemRQ rq = buildStartFeatureRequest(context.getFeature(), context.getUri());
 		context.setFeatureId(root.map(r -> launch.get().startTestItem(r, rq)).orElseGet(() -> launch.get().startTestItem(rq)));
 		return context;
 	}
@@ -665,7 +664,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 
 	private void addToTree(RunningContext.FeatureContext context) {
 		ITEM_TREE.getTestItems()
-				.put(createKey(context.getUri()), TestItemTree.createTestItemLeaf(context.getFeatureId(), DEFAULT_CAPACITY));
+				.put(createKey(context.getUri()), TestItemTree.createTestItemLeaf(context.getFeatureId()));
 	}
 
 	protected void handleStartOfTestCase(TestCaseStarted event) {
@@ -721,7 +720,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		retrieveLeaf(scenarioContext.getFeatureUri(),
 				scenarioContext.getLine(),
 				ITEM_TREE
-		).ifPresent(scenarioLeaf -> scenarioLeaf.getChildItems().put(createKey(text), TestItemTree.createTestItemLeaf(stepId, 0)));
+		).ifPresent(scenarioLeaf -> scenarioLeaf.getChildItems().put(createKey(text), TestItemTree.createTestItemLeaf(stepId)));
 	}
 
 	protected void removeFromTree(RunningContext.ScenarioContext scenarioContext, String text) {

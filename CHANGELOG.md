@@ -3,6 +3,8 @@
 ## [Unreleased]
 ### Changed
 - Client version updated on [5.0.15](https://github.com/reportportal/client-java/releases/tag/5.0.15)
+### Fixed
+- 'CHILD_START_TIME_EARLIER_THAN_PARENT' Exception in some cases (issue #7)
 
 ## [5.0.0]
 ### Added
