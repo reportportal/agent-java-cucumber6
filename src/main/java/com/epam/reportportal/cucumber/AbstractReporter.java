@@ -66,8 +66,8 @@ import static com.epam.reportportal.cucumber.Utils.*;
 import static com.epam.reportportal.cucumber.util.ItemTreeUtils.createKey;
 import static com.epam.reportportal.cucumber.util.ItemTreeUtils.retrieveLeaf;
 import static java.util.Optional.ofNullable;
-import static rp.com.google.common.base.Strings.isNullOrEmpty;
-import static rp.com.google.common.base.Throwables.getStackTraceAsString;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
 
 /**
  * Abstract Cucumber 5.x formatter for Report Portal
@@ -334,7 +334,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 						.addAll(SystemAttributesExtractor.extract(AGENT_PROPERTIES_FILE, AbstractReporter.class.getClassLoader()));
 				rq.setDescription(parameters.getDescription());
 				rq.setRerun(parameters.isRerun());
-				if (!isNullOrEmpty(parameters.getRerunOf())) {
+				if (isNotBlank(parameters.getRerunOf())) {
 					rq.setRerunOf(parameters.getRerunOf());
 				}
 
@@ -503,7 +503,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 			sendLog(message, level);
 		}
 		if (result.getError() != null) {
-			sendLog(getStackTraceAsString(result.getError()), level);
+			sendLog(getStackTrace(result.getError()), level);
 		}
 	}
 
