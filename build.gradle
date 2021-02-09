@@ -25,10 +25,10 @@ sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
 repositories {
-    jcenter()
     mavenLocal()
     maven { url "http://dl.bintray.com/epam/reportportal" }
     maven { url "https://jitpack.io" }
+    jcenter()
 }
 
 project.ext.githubUserName = project.hasProperty('githubUserName') ? githubUserName : ""
@@ -48,14 +48,14 @@ publishing {
 }
 
 dependencies {
-    api 'com.epam.reportportal:client-java:5.0.15'
+    api 'com.epam.reportportal:client-java:5.0.18'
     api 'com.epam.reportportal:commons-model:5.0.0'
     api 'com.google.code.findbugs:jsr305:3.0.2'
 
-    api 'io.cucumber:cucumber-java:6.0.0'
+    api "io.cucumber:cucumber-java:${project.cucumber_version}"
 
     testImplementation 'com.github.reportportal:agent-java-test-utils:ddcf50ee20'
-    testImplementation 'io.cucumber:cucumber-testng:6.0.0'
+    testImplementation "io.cucumber:cucumber-testng:${project.cucumber_version}"
     testImplementation 'org.aspectj:aspectjweaver:1.9.2'
     testImplementation 'org.hamcrest:hamcrest-core:2.2'
     testImplementation 'org.mockito:mockito-core:3.3.3'

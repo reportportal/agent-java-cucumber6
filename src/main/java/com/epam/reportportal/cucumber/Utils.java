@@ -76,6 +76,7 @@ public class Utils {
 		return (prefix == null ? EMPTY : prefix) + infix + argument;
 	}
 
+	@Deprecated
 	public static Method retrieveMethod(Field definitionMatchField, TestStep testStep) throws IllegalAccessException, NoSuchFieldException {
 		Object stepDefinitionMatch = definitionMatchField.get(testStep);
 		Field stepDefinitionField = stepDefinitionMatch.getClass().getDeclaredField(STEP_DEFINITION_FIELD_NAME);
