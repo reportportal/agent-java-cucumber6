@@ -382,7 +382,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		rq.setParameters(getParameters(codeRef, testStep));
 		rq.setCodeRef(codeRef);
 		rq.setTestCaseId(ofNullable(getTestCaseId(testStep, codeRef)).map(TestCaseIdEntry::getId).orElse(null));
-		rq.setAttributes(getAttributes(testStep));
+		ofNullable(codeRef).ifPresent(c -> rq.setAttributes(getAttributes(c)));
 		return rq;
 	}
 
@@ -663,8 +663,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	}
 
 	private void addToTree(RunningContext.FeatureContext context) {
-		ITEM_TREE.getTestItems()
-				.put(createKey(context.getUri()), TestItemTree.createTestItemLeaf(context.getFeatureId()));
+		ITEM_TREE.getTestItems().put(createKey(context.getUri()), TestItemTree.createTestItemLeaf(context.getFeatureId()));
 	}
 
 	protected void handleStartOfTestCase(TestCaseStarted event) {
@@ -870,29 +869,6 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	}
 
 	/**
-	 * Returns static attributes defined by {@link Attributes} annotation in code.
-	 *
-	 * @param testStep - Cucumber's TestStep object
-	 * @return a set of attributes or null if no such method provided by the match object
-	 */
-	@Nullable
-	protected Set<ItemAttributesRQ> getAttributes(@Nonnull TestStep testStep) {
-		Field definitionMatchField = getDefinitionMatchField(testStep);
-		if (definitionMatchField != null) {
-			try {
-				Method method = retrieveMethod(definitionMatchField, testStep);
-				Attributes attributesAnnotation = method.getAnnotation(Attributes.class);
-				if (attributesAnnotation != null) {
-					return AttributeParser.retrieveAttributes(attributesAnnotation);
-				}
-			} catch (NoSuchFieldException | IllegalAccessException e) {
-				return null;
-			}
-		}
-		return null;
-	}
-
-	/**
 	 * Returns code reference for mapped code
 	 *
 	 * @param testStep Cucumber's TestStep object
@@ -933,6 +909,60 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		return WORKING_DIRECTORY.relativize(uri) + ":" + line;
 	}
 
+	@Nonnull
+	private static Pair<String, String> parseJavaCodeRef(@Nonnull String codeRef) {
+		int lastDelimiterIndex = codeRef.lastIndexOf('.');
+		String className = codeRef.substring(0, lastDelimiterIndex);
+		String methodName = codeRef.substring(lastDelimiterIndex + 1);
+		return Pair.of(className, methodName);
+	}
+
+	@Nonnull
+	private static Optional<Class<?>> getStepClass(String classCodeRef, String fullCodeRef) {
+		try {
+			return Optional.of(Class.forName(classCodeRef));
+		} catch (ClassNotFoundException e1) {
+			try {
+				return Optional.of(Class.forName(fullCodeRef));
+			} catch (ClassNotFoundException e2) {
+				return Optional.empty();
+			}
+		}
+	}
+
+	@Nonnull
+	private static Optional<Method> getStepMethod(@Nonnull Class<?> stepClass, @Nullable String methodName) {
+		return Arrays.stream(stepClass.getMethods()).filter(m -> m.getName().equals(methodName)).findAny();
+	}
+
+	/**
+	 * Returns static attributes defined by {@link Attributes} annotation in code.
+	 *
+	 * @param codeRef - a method reference to read parameters
+	 * @return a set of attributes or null if no such method provided by the match object
+	 */
+	@Nullable
+	protected Set<ItemAttributesRQ> getAttributes(@Nonnull String codeRef) {
+		Pair<String, String> splitCodeRef = parseJavaCodeRef(codeRef);
+		Optional<Class<?>> testStepClass = getStepClass(splitCodeRef.getKey(), codeRef);
+		return testStepClass.flatMap(c -> getStepMethod(c, splitCodeRef.getValue()))
+				.map(m -> m.getAnnotation(Attributes.class))
+				.map(AttributeParser::retrieveAttributes)
+				.orElse(null);
+	}
+
+	/**
+	 * Returns static attributes defined by {@link Attributes} annotation in code.
+	 *
+	 * @param testStep - Cucumber's TestStep object
+	 * @return a set of attributes or null if no such method provided by the match object
+	 */
+	@Nullable
+	@Deprecated
+	protected Set<ItemAttributesRQ> getAttributes(@Nonnull TestStep testStep) {
+		return ofNullable(getCodeRef(testStep)).map(this::getAttributes).orElse(null);
+	}
+
 	/**
 	 * Return a Test Case ID for mapped code
 	 *
@@ -943,20 +973,18 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	@Nullable
 	@SuppressWarnings("unchecked")
 	protected TestCaseIdEntry getTestCaseId(@Nonnull TestStep testStep, @Nullable String codeRef) {
-		Field definitionMatchField = getDefinitionMatchField(testStep);
 		List<Argument> arguments = ((PickleStepTestStep) testStep).getDefinitionArgument();
-		if (definitionMatchField != null) {
-			try {
-				Method method = retrieveMethod(definitionMatchField, testStep);
-				return TestCaseIdUtils.getTestCaseId(method.getAnnotation(TestCaseId.class),
-						method,
-						codeRef,
-						(List<Object>) ARGUMENTS_TRANSFORM.apply(arguments)
-				);
-			} catch (NoSuchFieldException | IllegalAccessException ignore) {
-			}
-		}
-		return getTestCaseId(codeRef, arguments);
+
+		return ofNullable(codeRef).flatMap(r -> {
+			Pair<String, String> splitCodeRef = parseJavaCodeRef(codeRef);
+			Optional<Class<?>> testStepClass = getStepClass(splitCodeRef.getKey(), codeRef);
+			return testStepClass.flatMap(c -> getStepMethod(c, splitCodeRef.getValue()))
+					.map(m -> TestCaseIdUtils.getTestCaseId(m.getAnnotation(TestCaseId.class),
+							m,
+							codeRef,
+							(List<Object>) ARGUMENTS_TRANSFORM.apply(arguments)
+					));
+		}).orElseGet(() -> getTestCaseId(codeRef, arguments));
 	}
 
 	/**
