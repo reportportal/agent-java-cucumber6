@@ -26,6 +26,8 @@ import java.io.IOException;
 import java.util.Objects;
 
 public class EmbeddingStepdefs {
+	public static final String IMAGE_NAME = "Screenshot";
+
 	public String type;
 
 	@Given("I have a dummy step to make a screenshot with correct mime type")
@@ -51,7 +53,7 @@ public class EmbeddingStepdefs {
 		scenario.attach(
 				IOUtils.toByteArray(Objects.requireNonNull(getClass().getClassLoader().getResourceAsStream("files/unlucky.jpg"))),
 				type,
-				"ignored"
+				IMAGE_NAME
 		);
 	}
 }

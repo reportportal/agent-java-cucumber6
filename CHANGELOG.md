@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- Data attachments honor names now
 
 ## [5.0.2]
 ### Changed
