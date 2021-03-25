@@ -329,9 +329,9 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 				rq.setName(parameters.getLaunchName());
 				rq.setStartTime(startTime);
 				rq.setMode(parameters.getLaunchRunningMode());
-				rq.setAttributes(parameters.getAttributes());
-				rq.getAttributes()
-						.addAll(SystemAttributesExtractor.extract(AGENT_PROPERTIES_FILE, AbstractReporter.class.getClassLoader()));
+				Set<ItemAttributesRQ> attributes = parameters.getAttributes();
+				attributes.addAll(SystemAttributesExtractor.extract(AGENT_PROPERTIES_FILE, AbstractReporter.class.getClassLoader()));
+				rq.setAttributes(attributes);
 				rq.setDescription(parameters.getDescription());
 				rq.setRerun(parameters.isRerun());
 				if (isNotBlank(parameters.getRerunOf())) {
