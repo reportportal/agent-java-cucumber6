@@ -1,8 +1,6 @@
 # Changelog
 
 ## [Unreleased]
-
-## [5.0.4]
 ### Changed
 - Data attachments honor names now
 - Client version updated on [5.0.21](https://github.com/reportportal/client-java/releases/tag/5.0.21)
