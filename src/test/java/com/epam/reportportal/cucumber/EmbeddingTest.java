@@ -18,6 +18,7 @@ package com.epam.reportportal.cucumber;
 
 import com.epam.reportportal.cucumber.integration.TestScenarioReporter;
 import com.epam.reportportal.cucumber.integration.TestStepReporter;
+import com.epam.reportportal.cucumber.integration.embed.image.EmbeddingStepdefs;
 import com.epam.reportportal.cucumber.integration.util.TestUtils;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.restendpoint.http.MultiPartRequest;
@@ -109,7 +110,10 @@ public class EmbeddingTest {
 
 		assertThat(logs, hasSize(3));
 
-		logs.forEach(l -> assertThat(l.getFile().getContentType(), equalTo("image/jpeg")));
+		logs.forEach(l -> {
+			assertThat(l.getFile().getContentType(), equalTo("image/jpeg"));
+			assertThat(l.getMessage(), equalTo(EmbeddingStepdefs.IMAGE_NAME));
+		});
 	}
 
 	@Test
