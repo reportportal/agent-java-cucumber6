@@ -80,7 +80,6 @@ test {
         def weaver = configurations.testRuntimeClasspath.find { it.name.contains("aspectjweaver") }
         jvmArgs += "-javaagent:$weaver"
     }
-
     testLogging {
         events "failed"
         exceptionFormat "full"
