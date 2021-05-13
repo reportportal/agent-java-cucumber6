@@ -20,8 +20,6 @@ import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.cucumber.plugin.event.HookType;
 import io.cucumber.plugin.event.TestStep;
 import io.reactivex.Maybe;
-import rp.com.google.common.base.Supplier;
-import rp.com.google.common.base.Suppliers;
 
 import javax.annotation.Nonnull;
 import java.util.Calendar;
@@ -71,6 +69,15 @@ public class ScenarioReporter extends AbstractReporter {
 	}
 
 	@Override
+	protected void beforeStep(TestStep testStep) {
+		super.beforeStep(testStep);
+		String description = buildMultilineArgument(testStep).trim();
+		if (!description.isEmpty()) {
+			sendLog(description);
+		}
+	}
+
+	@Override
 	protected StartTestItemRQ buildStartHookRequest(HookType hookType) {
 		StartTestItemRQ rq = super.buildStartHookRequest(hookType);
 		rq.setHasStats(false);
@@ -105,7 +112,7 @@ public class ScenarioReporter extends AbstractReporter {
 	 * Finish root suite
 	 */
 	protected void finishRootItem() {
-		if(rootSuiteId.isInitialized()) {
+		if (rootSuiteId.isInitialized()) {
 			finishTestItem(rootSuiteId.get());
 			rootSuiteId = null;
 		}
