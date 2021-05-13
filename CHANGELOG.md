@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.0.6]
 ### Fixed
 - Table parameter handling for different reporters
 
