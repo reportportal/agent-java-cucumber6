@@ -30,19 +30,6 @@ repositories {
 project.ext.githubUserName = project.hasProperty('githubUserName') ? githubUserName : ""
 project.ext.githubToken = project.hasProperty('githubToken') ? githubToken : ""
 
-publishing {
-    repositories {
-        maven {
-            name = "Cucumber6 GitHub Packages"
-            url = uri("https://maven.pkg.github.com/reportportal/agent-java-cucumber6")
-            credentials {
-                username = githubUserName
-                password = githubToken
-            }
-        }
-    }
-}
-
 dependencies {
     api 'com.epam.reportportal:client-java:5.0.21'
     api 'com.epam.reportportal:commons-model:5.0.0'
