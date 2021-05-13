@@ -27,9 +27,6 @@ repositories {
     maven { url "https://jitpack.io" }
 }
 
-project.ext.githubUserName = project.hasProperty('githubUserName') ? githubUserName : ""
-project.ext.githubToken = project.hasProperty('githubToken') ? githubToken : ""
-
 dependencies {
     api 'com.epam.reportportal:client-java:5.0.21'
     api 'com.epam.reportportal:commons-model:5.0.0'
