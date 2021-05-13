@@ -21,12 +21,15 @@ import io.cucumber.plugin.event.Status;
 import io.cucumber.plugin.event.TestStep;
 import rp.com.google.common.collect.ImmutableMap;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static java.util.Optional.ofNullable;
 
@@ -39,6 +42,10 @@ public class Utils {
 	private static final String DEFINITION_MATCH_FIELD_NAME = "definitionMatch";
 	private static final String STEP_DEFINITION_FIELD_NAME = "stepDefinition";
 	private static final String METHOD_FIELD_NAME = "method";
+	protected static final String ONE_SPACE = "&nbsp;";
+	protected static final String NEW_LINE = "\r\n";
+	protected static final String TABLE_INDENT = "&nbsp;&nbsp;&nbsp;&nbsp;";
+	protected static final String TABLE_SEPARATOR = "|";
 
 	private Utils() {
 		throw new AssertionError("No instances should exist for the class!");
@@ -108,5 +115,38 @@ public class Utils {
 
 			return null;
 		}
+	}
+
+	/**
+	 * Converts a table represented as List of Lists to a formatted table string
+	 *
+	 * @param table a table object
+	 * @return string representation of the table
+	 */
+	@Nonnull
+	public static String formatDataTable(@Nonnull final List<List<String>> table) {
+		StringBuilder result = new StringBuilder();
+		int tableLength = table.stream().mapToInt(List::size).max().orElse(-1);
+		List<Iterator<String>> iterList = table.stream().map(List::iterator).collect(Collectors.toList());
+		List<Integer> colSizes = IntStream.range(0, tableLength)
+				.mapToObj(n -> iterList.stream().filter(Iterator::hasNext).map(Iterator::next).collect(Collectors.toList()))
+				.map(col -> col.stream().mapToInt(String::length).max().orElse(0))
+				.collect(Collectors.toList());
+
+		for (List<String> row : table) {
+			result.append(TABLE_INDENT).append(TABLE_SEPARATOR);
+			for (int i = 0; i < row.size(); i++) {
+				String cell = row.get(i);
+				int maxSize = colSizes.get(i) - cell.length() + 2;
+				int lSpace = maxSize / 2;
+				int rSpace = maxSize - lSpace;
+				IntStream.range(0, lSpace).forEach(j -> result.append(ONE_SPACE));
+				result.append(cell);
+				IntStream.range(0, rSpace).forEach(j -> result.append(ONE_SPACE));
+				result.append(TABLE_SEPARATOR);
+			}
+			result.append(NEW_LINE);
+		}
+		return result.toString().trim();
 	}
 }

@@ -17,6 +17,7 @@
 package com.epam.reportportal.cucumber.integration.feature;
 
 import com.epam.reportportal.annotations.ParameterKey;
+import io.cucumber.datatable.DataTable;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -60,5 +61,10 @@ public class ReportsTestWithParameters {
 	@When("I have a step with a named string parameter {string}")
 	public void iHaveANamedStrInlineParameter(@ParameterKey("my name") String str) {
 		LOGGER.info("String parameter {}", str);
+	}
+
+	@Given("a step with a data table:")
+	public void testStep(DataTable dataTable) {
+		LOGGER.info("DataTable parameter:&#13;&#10;{}", dataTable.toString());
 	}
 }

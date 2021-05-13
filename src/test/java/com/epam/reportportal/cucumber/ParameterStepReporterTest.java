@@ -20,11 +20,13 @@ import com.epam.reportportal.cucumber.integration.TestScenarioReporter;
 import com.epam.reportportal.cucumber.integration.TestStepReporter;
 import com.epam.reportportal.cucumber.integration.util.TestUtils;
 import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.ParameterResource;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.cucumber.testng.AbstractTestNGCucumberTests;
 import io.cucumber.testng.CucumberOptions;
 import org.apache.commons.lang3.tuple.Pair;
@@ -71,11 +73,21 @@ public class ParameterStepReporterTest {
 
 	}
 
-	@CucumberOptions(features = "src/test/resources/features/BasicDocStringParameters.feature", glue = {
+	@CucumberOptions(features = "src/test/resources/features/DocStringParameters.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
 	public static class DocstringParameterTestStepReporter extends AbstractTestNGCucumberTests {
 	}
+
+	@CucumberOptions(features = "src/test/resources/features/DataTableParameter.feature", glue = {
+			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
+			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
+	public static class DataTableParameterTestStepReporter extends AbstractTestNGCucumberTests {
+	}
+
+	private static final String DOCSTRING_PARAM = "My very long parameter\nWith some new lines";
+	private static final String TABLE_PARAM =
+			Utils.formatDataTable(Arrays.asList(Arrays.asList("key","value"), Arrays.asList("myKey","myValue")));
 
 	private final String launchId = CommonUtils.namedId("launch_");
 	private final String suiteId = CommonUtils.namedId("suite_");
@@ -195,6 +207,7 @@ public class ParameterStepReporterTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	public void verify_docstring_parameters() {
 		TestUtils.runTests(DocstringParameterTestStepReporter.class);
 
@@ -206,6 +219,48 @@ public class ParameterStepReporterTest {
 		assertThat(params, allOf(notNullValue(), hasSize(1)));
 		ParameterResource param1 = params.get(0);
 		assertThat(param1.getKey(), equalTo("java.lang.String"));
-		assertThat(param1.getValue(), equalTo("My very long parameter\nWith some new lines"));
+		assertThat(param1.getValue(), equalTo(DOCSTRING_PARAM));
+
+		ArgumentCaptor<MultiPartRequest> logCaptor = ArgumentCaptor.forClass(MultiPartRequest.class);
+		verify(client, times(2)).log(logCaptor.capture());
+		List<String> logs = logCaptor.getAllValues()
+				.stream()
+				.flatMap(l -> l.getSerializedRQs().stream())
+				.flatMap(l -> ((List<SaveLogRQ>) l.getRequest()).stream())
+				.filter(l -> l.getItemUuid().equals(tests.get(0).getValue().get(1)))
+				.map(SaveLogRQ::getMessage)
+				.collect(Collectors.toList());
+
+		assertThat(logs, hasSize(1));
+		assertThat(logs, not(hasItem(equalTo("\"\"\"\n" + DOCSTRING_PARAM + "\n\"\"\""))));
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void verify_data_table_parameters() {
+		TestUtils.runTests(DataTableParameterTestStepReporter.class);
+
+		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(client, times(1)).startTestItem(same(testIds.get(0)), captor.capture());
+
+		List<StartTestItemRQ> items = captor.getAllValues();
+		List<ParameterResource> params = items.get(0).getParameters();
+		assertThat(params, allOf(notNullValue(), hasSize(1)));
+		ParameterResource param1 = params.get(0);
+		assertThat(param1.getKey(), equalTo("io.cucumber.datatable.DataTable"));
+		assertThat(param1.getValue(), equalTo(TABLE_PARAM));
+
+		ArgumentCaptor<MultiPartRequest> logCaptor = ArgumentCaptor.forClass(MultiPartRequest.class);
+		verify(client, times(1)).log(logCaptor.capture());
+		MultiPartRequest logRq = logCaptor.getValue();
+
+		List<String> logs = logRq.getSerializedRQs().stream()
+				.flatMap(l -> ((List<SaveLogRQ>) l.getRequest()).stream())
+				.filter(l -> l.getItemUuid().equals(tests.get(0).getValue().get(0)))
+				.map(SaveLogRQ::getMessage)
+				.collect(Collectors.toList());
+
+		assertThat(logs, hasSize(1));
+		assertThat(logs, not(hasItem(equalTo(TABLE_PARAM))));
 	}
 }

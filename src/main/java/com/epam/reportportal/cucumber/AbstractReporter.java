@@ -80,18 +80,13 @@ import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
  */
 public abstract class AbstractReporter implements ConcurrentEventListener {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractReporter.class);
-	private static final URI WORKING_DIRECTORY = new File(System.getProperty("user.dir")).toURI();
+	protected static final URI WORKING_DIRECTORY = new File(System.getProperty("user.dir")).toURI();
 	private static final String AGENT_PROPERTIES_FILE = "agent.properties";
 	private static final String STEP_DEFINITION_FIELD_NAME = "stepDefinition";
 	private static final String GET_LOCATION_METHOD_NAME = "getLocation";
-	private static final String METHOD_OPENING_BRACKET = "(";
-	private static final String HOOK_ = "Hook: ";
-	private static final String ONE_SPACE = " ";
-	private static final String NEW_LINE = "\r\n";
-	private static final String TABLE_INDENT = "          ";
-	private static final String TABLE_SEPARATOR = "|";
-	private static final String DOCSTRING_DECORATOR = "\n\"\"\"\n";
-	private static final String EMPTY = "";
+	protected static final String METHOD_OPENING_BRACKET = "(";
+	protected static final String HOOK_ = "Hook: ";
+	protected static final String DOCSTRING_DECORATOR = "\n\"\"\"\n";
 
 	public static final TestItemTree ITEM_TREE = new TestItemTree();
 	private static volatile ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
@@ -835,6 +830,17 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	}
 
 	/**
+	 * Converts a table represented as List of Lists to a formatted table string
+	 *
+	 * @param table a table object
+	 * @return string representation of the table
+	 */
+	@Nonnull
+	protected String formatDataTable(@Nonnull final List<List<String>> table) {
+		return Utils.formatDataTable(table);
+	}
+
+	/**
 	 * Generate multiline argument (DataTable or DocString) representation
 	 *
 	 * @param step - Cucumber step object
@@ -844,12 +850,12 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	@Nonnull
 	protected String buildMultilineArgument(@Nonnull TestStep step) {
 		List<List<String>> table = null;
-		String dockString = EMPTY;
+		String docString = null;
 		PickleStepTestStep pickleStep = (PickleStepTestStep) step;
 		if (pickleStep.getStep().getArgument() != null) {
 			StepArgument argument = pickleStep.getStep().getArgument();
 			if (argument instanceof DocStringArgument) {
-				dockString = ((DocStringArgument) argument).getContent();
+				docString = ((DocStringArgument) argument).getContent();
 			} else if (argument instanceof DataTableArgument) {
 				table = ((DataTableArgument) argument).cells();
 			}
@@ -857,18 +863,11 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 
 		StringBuilder marg = new StringBuilder();
 		if (table != null) {
-			marg.append(NEW_LINE);
-			for (List<String> row : table) {
-				marg.append(TABLE_INDENT).append(TABLE_SEPARATOR);
-				for (String cell : row) {
-					marg.append(ONE_SPACE).append(cell).append(ONE_SPACE).append(TABLE_SEPARATOR);
-				}
-				marg.append(NEW_LINE);
-			}
+			marg.append(formatDataTable(table));
 		}
 
-		if (!dockString.isEmpty()) {
-			marg.append(DOCSTRING_DECORATOR).append(dockString).append(DOCSTRING_DECORATOR);
+		if (docString != null) {
+			marg.append(DOCSTRING_DECORATOR).append(docString).append(DOCSTRING_DECORATOR);
 		}
 		return marg.toString();
 	}
@@ -1043,7 +1042,14 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 				.map(arg -> Pair.of(arg.getParameterTypeName(), arg.getValue()))
 				.collect(Collectors.toList())).orElse(Collections.emptyList());
 		ofNullable(pickleStepTestStep.getStep().getArgument()).ifPresent(a -> {
-			String value = a instanceof DocStringArgument ? ((DocStringArgument) a).getContent() : a.toString();
+			String value;
+			if(a instanceof DocStringArgument) {
+				value = ((DocStringArgument) a).getContent();
+			} else if (a instanceof DataTableArgument) {
+				value = formatDataTable(((DataTableArgument)a).cells());
+			} else {
+				value = a.toString();
+			}
 			params.add(Pair.of("arg", value));
 		});
 		return ParameterUtils.getParameters(codeRef, params);
