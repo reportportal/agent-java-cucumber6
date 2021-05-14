@@ -42,7 +42,7 @@ jobs:
           echo "ARTIFACT=`echo ${{ github.repository }} | cut -d/ -f2-`" >> $GITHUB_ENV
           echo "PACKAGE_PATH=`echo ${{ env.PACKAGE }} | sed 's/\./\//g'`" >> $GITHUB_ENV
 
-      - name: Download packages
+      - name: Promote packages
         run: |
           IFS=',' read -a files <<< '${{ env.PACKAGE_SUFFIXES }}'
           for f in ${files[@]}; do
@@ -50,4 +50,11 @@ jobs:
             echo "Downloading artifact: ${URL}"
             curl -u ${{ github.actor }}:${{ secrets.GITHUB_TOKEN }} -O -L "${URL}"
           done
+          echo 'Files downloaded:'
           ls -l
+
+          echo 'Bundle generation'
+          files=($(ls -d */))
+          jar -cvf " + ${ARTIFACT} + "-" + ${{ github.event.inputs.version }} + "-bundle.jar " + ${files}
+
+          echo 'Bundle upload'
