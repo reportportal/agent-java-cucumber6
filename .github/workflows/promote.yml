@@ -48,5 +48,6 @@ jobs:
           for f in ${files[@]}; do
             export URL="${{ env.REPOSITORY_URL }}${{ github.repository }}/${PACKAGE_PATH}/${ARTIFACT}/${{ github.event.inputs.version }}/${ARTIFACT}-${{ github.event.inputs.version }}${f}"
             echo "Downloading artifact: ${URL}"
-            curl -u ${{ github.actor }}:${{ secrets.GITHUB_TOKEN }} -L "${URL}"
+            curl -u ${{ github.actor }}:${{ secrets.GITHUB_TOKEN }} -O -L "${URL}"
           done
+          ls -l
