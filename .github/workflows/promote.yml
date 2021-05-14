@@ -50,11 +50,11 @@ jobs:
             echo "Downloading artifact: ${URL}"
             curl -u ${{ github.actor }}:${{ secrets.GITHUB_TOKEN }} -O -L "${URL}"
           done
+          files=($(ls))
           echo 'Files downloaded:'
-          ls -l
+          echo ${files}
 
           echo 'Bundle generation'
-          files=($(ls))
           jar -cvf " + ${ARTIFACT} + "-" + ${{ github.event.inputs.version }} + "-bundle.jar " + ${files}
           ls -l
 
