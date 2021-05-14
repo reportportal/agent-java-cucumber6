@@ -48,14 +48,14 @@ jobs:
           for f in ${files[@]}; do
             export URL="${{ env.REPOSITORY_URL }}${{ github.repository }}/${PACKAGE_PATH}/${ARTIFACT}/${{ github.event.inputs.version }}/${ARTIFACT}-${{ github.event.inputs.version }}${f}"
             echo "Downloading artifact: ${URL}"
-            curl -u ${{ github.actor }}:${{ secrets.GITHUB_TOKEN }} -O -L "${URL}"
+            curl -u ${{ github.actor }}:${{ secrets.GITHUB_TOKEN }} -s -O -L "${URL}"
           done
           files=($(ls))
           echo 'Files downloaded:'
           echo "${files[@]}"
 
           echo 'Bundle generation'
-          jar -cvf ${ARTIFACT}-${{ github.event.inputs.version }}-bundle.jar + "${files[@]}"
+          jar -cvf ${ARTIFACT}-${{ github.event.inputs.version }}-bundle.jar "${files[@]}"
           ls -l
 
           echo 'Bundle upload'
