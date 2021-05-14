@@ -52,10 +52,10 @@ jobs:
           done
           files=($(ls))
           echo 'Files downloaded:'
-          echo ${files}
+          echo "${files[@]}"
 
           echo 'Bundle generation'
-          jar -cvf " + ${ARTIFACT} + "-" + ${{ github.event.inputs.version }} + "-bundle.jar " + ${files}
+          jar -cvf " + ${ARTIFACT} + "-" + ${{ github.event.inputs.version }} + "-bundle.jar " + "${files[@]}"
           ls -l
 
           echo 'Bundle upload'
