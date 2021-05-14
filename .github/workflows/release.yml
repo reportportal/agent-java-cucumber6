@@ -27,9 +27,9 @@ on:
 env:
   VERSION_FILE: gradle.properties
   VERSION_EXTRACT_PATTERN: '(?<=version=).+'
-  GH_USER_NAME: github.actor
   CHANGE_LOG_FILE: CHANGELOG.md
   CHANGE_LOG_TMP_FILE: CHANGELOG_updated.md
+  REPOSITORY_URL: 'https://maven.pkg.github.com/'
 
 jobs:
   release:
@@ -64,8 +64,8 @@ jobs:
         id: release
         run: |
           ./gradlew release -Prelease.useAutomaticVersion=true -Prelease.releaseVersion=${{ env.RELEASE_VERSION }} \
-          -Prelease.newVersion=${{ env.NEXT_VERSION }} -PpublishRepo=https://maven.pkg.github.com/${{ github.repository }} \
-          -PgithubUserName=${{ env.GH_USER_NAME }} -PgithubToken=${{ secrets.GITHUB_TOKEN }} \
+          -Prelease.newVersion=${{ env.NEXT_VERSION }} -PpublishRepo=${{ env.REPOSITORY_URL }}${{ github.repository }} \
+          -PgithubUserName=${{ github.actor }} -PgithubToken=${{ secrets.GITHUB_TOKEN }} \
           -PgpgPassphrase=${{  secrets.GPG_PASSPHRASE  }} -PgpgPrivateKey="$(cat <<'EOF'
           ${{ secrets.GPG_PRIVATE_KEY }}
           EOF
