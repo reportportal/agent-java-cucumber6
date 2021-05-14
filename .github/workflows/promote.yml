@@ -55,7 +55,7 @@ jobs:
           echo "${files[@]}"
 
           echo 'Bundle generation'
-          jar -cvf " + ${ARTIFACT} + "-" + ${{ github.event.inputs.version }} + "-bundle.jar " + "${files[@]}"
+          jar -cvf ${ARTIFACT}-${{ github.event.inputs.version }}-bundle.jar + "${files[@]}"
           ls -l
 
           echo 'Bundle upload'
