@@ -40,7 +40,7 @@ jobs:
       - name: Get variables
         run: |
           echo "ARTIFACT=`echo ${{ github.repository }} | cut -d/ -f2-`" >> $GITHUB_ENV
-          echo "PACKAGE_PATH=`echo ${{ env.PACKAGE }} | sed 's/\./\//g'" >> $GITHUB_ENV
+          echo "PACKAGE_PATH=`echo ${{ env.PACKAGE }} | sed 's/\./\//g'`" >> $GITHUB_ENV
 
       - name: Download packages
         run: |
