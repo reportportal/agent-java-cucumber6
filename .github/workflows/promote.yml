@@ -54,7 +54,8 @@ jobs:
           ls -l
 
           echo 'Bundle generation'
-          files=($(ls -d */))
+          files=($(ls))
           jar -cvf " + ${ARTIFACT} + "-" + ${{ github.event.inputs.version }} + "-bundle.jar " + ${files}
+          ls -l
 
           echo 'Bundle upload'
