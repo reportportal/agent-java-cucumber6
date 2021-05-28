@@ -29,22 +29,39 @@ public class EmbeddingStepdefs {
 	public static final String IMAGE_NAME = "Screenshot";
 
 	public String type;
+	public String name;
 
 	@Given("I have a dummy step to make a screenshot with correct mime type")
 	public void i_have_a_dummy_step_to_make_a_screenshot_correct_type() throws InterruptedException {
 		type = "image/jpeg";
+		name = IMAGE_NAME;
 		Thread.sleep(CommonUtils.MINIMAL_TEST_PAUSE);
 	}
 
 	@Given("I have a dummy step to make a screenshot with incorrect mime type")
 	public void i_have_a_dummy_step_to_make_a_screenshot_incorrect_type() throws InterruptedException {
 		type = "image/png";
+		name = IMAGE_NAME;
 		Thread.sleep(CommonUtils.MINIMAL_TEST_PAUSE);
 	}
 
 	@Given("I have a dummy step to make a screenshot with partially correct mime type")
 	public void i_have_a_dummy_step_to_make_a_screenshot_partially_correct_type() throws InterruptedException {
 		type = "jpeg";
+		name = IMAGE_NAME;
+		Thread.sleep(CommonUtils.MINIMAL_TEST_PAUSE);
+	}
+
+	@Given("I have a dummy step to make a screenshot without name")
+	public void i_have_a_dummy_step_to_make_a_screenshot_without_name() throws InterruptedException {
+		type = "image/jpeg";
+		Thread.sleep(CommonUtils.MINIMAL_TEST_PAUSE);
+	}
+
+	@Given("I have a dummy step to make a screenshot with empty name")
+	public void i_have_a_dummy_step_to_make_a_screenshot_with_empty_name() throws InterruptedException {
+		type = "image/jpeg";
+		name = "";
 		Thread.sleep(CommonUtils.MINIMAL_TEST_PAUSE);
 	}
 
@@ -53,7 +70,7 @@ public class EmbeddingStepdefs {
 		scenario.attach(
 				IOUtils.toByteArray(Objects.requireNonNull(getClass().getClassLoader().getResourceAsStream("files/unlucky.jpg"))),
 				type,
-				IMAGE_NAME
+				name
 		);
 	}
 }
