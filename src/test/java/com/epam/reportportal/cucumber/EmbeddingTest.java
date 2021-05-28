@@ -47,31 +47,45 @@ import static org.mockito.Mockito.*;
 
 @SuppressWarnings("unchecked")
 public class EmbeddingTest {
-	@CucumberOptions(features = "src/test/resources/features/ImageEmbeddingFeature.feature", glue = {
+	@CucumberOptions(features = "src/test/resources/features/embedding/ImageEmbeddingFeature.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.embed.image" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
 	public static class ImageStepReporter extends AbstractTestNGCucumberTests {
 
 	}
 
-	@CucumberOptions(features = "src/test/resources/features/TextEmbeddingFeature.feature", glue = {
+	@CucumberOptions(features = "src/test/resources/features/embedding/TextEmbeddingFeature.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.embed.text" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
 	public static class TextStepReporter extends AbstractTestNGCucumberTests {
 
 	}
 
-	@CucumberOptions(features = "src/test/resources/features/PdfEmbeddingFeature.feature", glue = {
+	@CucumberOptions(features = "src/test/resources/features/embedding/PdfEmbeddingFeature.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.embed.pdf" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
 	public static class PdfStepReporter extends AbstractTestNGCucumberTests {
 
 	}
 
-	@CucumberOptions(features = "src/test/resources/features/ArchiveEmbeddingFeature.feature", glue = {
+	@CucumberOptions(features = "src/test/resources/features/embedding/ArchiveEmbeddingFeature.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.embed.zip" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
 	public static class ZipStepReporter extends AbstractTestNGCucumberTests {
+
+	}
+
+	@CucumberOptions(features = "src/test/resources/features/embedding/EmbedImageWithoutName.feature", glue = {
+			"com.epam.reportportal.cucumber.integration.embed.image" }, plugin = { "pretty",
+			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
+	public static class ImageNoNameStepReporter extends AbstractTestNGCucumberTests {
+
+	}
+
+	@CucumberOptions(features = "src/test/resources/features/embedding/EmbedImageWithEmptyName.feature", glue = {
+			"com.epam.reportportal.cucumber.integration.embed.image" }, plugin = { "pretty",
+			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
+	public static class ImageEmptyNameStepReporter extends AbstractTestNGCucumberTests {
 
 	}
 
@@ -170,4 +184,45 @@ public class EmbeddingTest {
 		logs.forEach(l -> assertThat(l.getFile().getContentType(), equalTo("application/zip")));
 	}
 
+	@Test
+	public void verify_image_no_name_embedding() {
+		TestUtils.runTests(ImageNoNameStepReporter.class);
+
+		ArgumentCaptor<MultiPartRequest> logCaptor = ArgumentCaptor.forClass(MultiPartRequest.class);
+		verify(client, times(2)).log(logCaptor.capture());
+		List<SaveLogRQ> logs = logCaptor.getAllValues()
+				.stream()
+				.flatMap(l -> l.getSerializedRQs().stream())
+				.flatMap(l -> ((List<SaveLogRQ>) l.getRequest()).stream())
+				.filter(l -> Objects.nonNull(l.getFile()))
+				.collect(Collectors.toList());
+
+		assertThat(logs, hasSize(1));
+
+		logs.forEach(l -> {
+			assertThat(l.getFile().getContentType(), equalTo("image/jpeg"));
+			assertThat(l.getMessage(), equalTo("image"));
+		});
+	}
+
+	@Test
+	public void verify_image_empty_name_embedding() {
+		TestUtils.runTests(ImageEmptyNameStepReporter.class);
+
+		ArgumentCaptor<MultiPartRequest> logCaptor = ArgumentCaptor.forClass(MultiPartRequest.class);
+		verify(client, times(2)).log(logCaptor.capture());
+		List<SaveLogRQ> logs = logCaptor.getAllValues()
+				.stream()
+				.flatMap(l -> l.getSerializedRQs().stream())
+				.flatMap(l -> ((List<SaveLogRQ>) l.getRequest()).stream())
+				.filter(l -> Objects.nonNull(l.getFile()))
+				.collect(Collectors.toList());
+
+		assertThat(logs, hasSize(1));
+
+		logs.forEach(l -> {
+			assertThat(l.getFile().getContentType(), equalTo("image/jpeg"));
+			assertThat(l.getMessage(), equalTo("image"));
+		});
+	}
 }
