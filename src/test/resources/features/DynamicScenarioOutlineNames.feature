@@ -1,4 +1,4 @@
-Feature: Dynamic scenario outline titles
+Feature: Dynamic scenario outline names
 
   Scenario Outline: Test with the parameter <str>
     Given It is test with parameters

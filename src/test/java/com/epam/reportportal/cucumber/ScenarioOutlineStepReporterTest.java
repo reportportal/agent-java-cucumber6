@@ -55,7 +55,7 @@ public class ScenarioOutlineStepReporterTest {
 
 	}
 
-	@CucumberOptions(features = "src/test/resources/features/DynamicScenarioOutlineTitles.feature", glue = {
+	@CucumberOptions(features = "src/test/resources/features/DynamicScenarioOutlineNames.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
 	public static class RunDynamicScenarioOutlineTitlesTestStepReporter extends AbstractTestNGCucumberTests {
@@ -96,7 +96,7 @@ public class ScenarioOutlineStepReporterTest {
 	}
 
 	@Test
-	public void verify_dynamic_scenario_outline_titles() {
+	public void verify_dynamic_scenario_outline_names() {
 		TestUtils.runTests(RunDynamicScenarioOutlineTitlesTestStepReporter.class);
 
 		verify(client, times(1)).startTestItem(any());
