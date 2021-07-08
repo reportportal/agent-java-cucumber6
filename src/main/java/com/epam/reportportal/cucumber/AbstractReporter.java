@@ -251,8 +251,8 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 * @param featureContext  current feature context
 	 * @param scenarioContext current scenario context
 	 */
-	protected void beforeScenario(RunningContext.FeatureContext featureContext, RunningContext.ScenarioContext scenarioContext, TestCase testCase) {
-		String scenarioName = Utils.buildName(scenarioContext.getKeyword(), AbstractReporter.COLON_INFIX, testCase.getName());
+	protected void beforeScenario(RunningContext.FeatureContext featureContext, RunningContext.ScenarioContext scenarioContext) {
+		String scenarioName = Utils.buildName(scenarioContext.getKeyword(), AbstractReporter.COLON_INFIX, scenarioContext.getTestCase().getName());
 		RunningContext.RuleContext rule = scenarioContext.getRule();
 		RunningContext.RuleContext currentRule = featureContext.getCurrentRule();
 		if (currentRule == null) {
@@ -709,7 +709,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 			return newScenarioContext;
 		});
 
-		beforeScenario(featureContext, scenarioContext, testCase);
+		beforeScenario(featureContext, scenarioContext);
 	}
 
 	protected void handleTestStepStarted(TestStepStarted event) {
