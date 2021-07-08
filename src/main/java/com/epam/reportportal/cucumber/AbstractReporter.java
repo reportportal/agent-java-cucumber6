@@ -252,7 +252,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 * @param scenarioContext current scenario context
 	 */
 	protected void beforeScenario(RunningContext.FeatureContext featureContext, RunningContext.ScenarioContext scenarioContext) {
-		String scenarioName = Utils.buildName(scenarioContext.getKeyword(), AbstractReporter.COLON_INFIX, scenarioContext.getName());
+		String scenarioName = Utils.buildName(scenarioContext.getKeyword(), AbstractReporter.COLON_INFIX, scenarioContext.getTestCase().getName());
 		RunningContext.RuleContext rule = scenarioContext.getRule();
 		RunningContext.RuleContext currentRule = featureContext.getCurrentRule();
 		if (currentRule == null) {
