@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static com.epam.reportportal.cucumber.integration.util.TestUtils.extractJsonParts;
+import static com.epam.reportportal.cucumber.integration.util.TestUtils.filterLogs;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.any;
@@ -73,8 +73,7 @@ public class ParameterScenarioReporterTest {
 	}
 
 	private static final String DOCSTRING_PARAM = "My very long parameter\nWith some new lines";
-	private static final String TABLE_PARAM = Utils.formatDataTable(Arrays.asList(
-			Arrays.asList("key", "value"),
+	private static final String TABLE_PARAM = Utils.formatDataTable(Arrays.asList(Arrays.asList("key", "value"),
 			Arrays.asList("myKey", "myValue")
 	));
 
@@ -149,10 +148,7 @@ public class ParameterScenarioReporterTest {
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(client, times(3)).log(logCaptor.capture());
-		List<String> logs = logCaptor.getAllValues()
-				.stream()
-				.flatMap(l -> extractJsonParts(l).stream())
-				.filter(l -> l.getItemUuid().equals(nestedStepIds.get(1)))
+		List<String> logs = filterLogs(logCaptor, l -> l.getItemUuid().equals(nestedStepIds.get(1))).stream()
 				.map(SaveLogRQ::getMessage)
 				.collect(Collectors.toList());
 
@@ -177,10 +173,7 @@ public class ParameterScenarioReporterTest {
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(client, times(2)).log(logCaptor.capture());
-		List<String> logs = logCaptor.getAllValues()
-				.stream()
-				.flatMap(l -> extractJsonParts(l).stream())
-				.filter(l -> l.getItemUuid().equals(nestedStepIds.get(0)))
+		List<String> logs = filterLogs(logCaptor, l -> l.getItemUuid().equals(nestedStepIds.get(0))).stream()
 				.map(SaveLogRQ::getMessage)
 				.collect(Collectors.toList());
 

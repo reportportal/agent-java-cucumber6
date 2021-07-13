@@ -30,11 +30,13 @@ import io.reactivex.Maybe;
 import okhttp3.MultipartBody;
 import okio.Buffer;
 import org.apache.commons.lang3.tuple.Pair;
+import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 import org.testng.TestNG;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.epam.reportportal.util.test.CommonUtils.createMaybe;
@@ -105,8 +107,8 @@ public class TestUtils {
 		when(client.finishLaunch(eq(launchUuid), any())).thenReturn(createMaybe(new OperationCompletionRS()));
 	}
 
+	@SuppressWarnings("unchecked")
 	public static void mockLogging(ReportPortalClient client) {
-		//noinspection unchecked
 		when(client.log(any(List.class))).thenReturn(createMaybe(new BatchSaveOperatingRS()));
 	}
 
@@ -167,6 +169,14 @@ public class TestUtils {
 					}
 				})
 				.flatMap(Collection::stream)
+				.collect(Collectors.toList());
+	}
+
+	public static List<SaveLogRQ> filterLogs(ArgumentCaptor<List<MultipartBody.Part>> logCaptor, Predicate<SaveLogRQ> filter) {
+		return logCaptor.getAllValues()
+				.stream()
+				.flatMap(l -> extractJsonParts(l).stream())
+				.filter(filter)
 				.collect(Collectors.toList());
 	}
 }

@@ -39,9 +39,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 
-import static com.epam.reportportal.cucumber.integration.util.TestUtils.extractJsonParts;
+import static com.epam.reportportal.cucumber.integration.util.TestUtils.filterLogs;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
@@ -73,7 +72,7 @@ public class FailedTest {
 	private final String testId = CommonUtils.namedId("test_");
 	private final String stepId = CommonUtils.namedId("step_");
 	private final String nestedStepId = CommonUtils.namedId("nested_");
-	private final List<Pair<String,String>> nestedSteps = Collections.singletonList(Pair.of(stepId, nestedStepId));
+	private final List<Pair<String, String>> nestedSteps = Collections.singletonList(Pair.of(stepId, nestedStepId));
 
 	private final ListenerParameters parameters = TestUtils.standardParameters();
 	private final ReportPortalClient client = mock(ReportPortalClient.class);
@@ -104,15 +103,12 @@ public class FailedTest {
 		verify(client).finishTestItem(same(testId), finishCaptor.capture());
 
 		List<FinishTestItemRQ> finishRqs = finishCaptor.getAllValues();
-		finishRqs.subList(0, finishRqs.size() - 1).forEach(e->assertThat(e.getStatus(), equalTo(ItemStatus.FAILED.name())));
+		finishRqs.subList(0, finishRqs.size() - 1).forEach(e -> assertThat(e.getStatus(), equalTo(ItemStatus.FAILED.name())));
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(client, atLeastOnce()).log(logCaptor.capture());
 
-		List<SaveLogRQ> expectedErrorList = logCaptor.getAllValues().stream()
-				.flatMap(l -> extractJsonParts(l).stream())
-				.filter(l -> l.getMessage() != null && l.getMessage().startsWith(EXPECTED_ERROR))
-				.collect(Collectors.toList());
+		List<SaveLogRQ> expectedErrorList = filterLogs(logCaptor, l -> l.getMessage() != null && l.getMessage().startsWith(EXPECTED_ERROR));
 		assertThat(expectedErrorList, hasSize(1));
 		SaveLogRQ expectedError = expectedErrorList.get(0);
 		assertThat(expectedError.getItemUuid(), equalTo(nestedStepId));
@@ -130,15 +126,12 @@ public class FailedTest {
 		verify(client).finishTestItem(same(stepId), finishCaptor.capture());
 		verify(client).finishTestItem(same(testId), finishCaptor.capture());
 
-		finishCaptor.getAllValues().forEach(e->assertThat(e.getStatus(), equalTo(ItemStatus.FAILED.name())));
+		finishCaptor.getAllValues().forEach(e -> assertThat(e.getStatus(), equalTo(ItemStatus.FAILED.name())));
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(client, atLeastOnce()).log(logCaptor.capture());
 
-		List<SaveLogRQ> expectedErrorList = logCaptor.getAllValues().stream()
-				.flatMap(l -> extractJsonParts(l).stream())
-				.filter(l -> l.getMessage() != null && l.getMessage().startsWith(EXPECTED_ERROR))
-				.collect(Collectors.toList());
+		List<SaveLogRQ> expectedErrorList = filterLogs(logCaptor, l -> l.getMessage() != null && l.getMessage().startsWith(EXPECTED_ERROR));
 		assertThat(expectedErrorList, hasSize(1));
 		SaveLogRQ expectedError = expectedErrorList.get(0);
 		assertThat(expectedError.getItemUuid(), equalTo(stepId));

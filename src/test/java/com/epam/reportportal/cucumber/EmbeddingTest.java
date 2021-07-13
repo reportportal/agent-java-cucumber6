@@ -43,7 +43,7 @@ import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.epam.reportportal.cucumber.integration.util.TestUtils.extractJsonParts;
+import static com.epam.reportportal.cucumber.integration.util.TestUtils.filterLogs;
 import static java.util.Optional.ofNullable;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -114,11 +114,7 @@ public class EmbeddingTest {
 	}
 
 	private List<SaveLogRQ> getLogsWithFiles(ArgumentCaptor<List<MultipartBody.Part>> logCaptor) {
-		return logCaptor.getAllValues()
-				.stream()
-				.flatMap(l -> extractJsonParts(l).stream())
-				.filter(l -> Objects.nonNull(l.getFile()))
-				.collect(Collectors.toList());
+		return filterLogs(logCaptor, l -> Objects.nonNull(l.getFile()));
 	}
 
 	private List<MultipartBody.Part> getLogFiles(String name, ArgumentCaptor<List<MultipartBody.Part>> logCaptor) {

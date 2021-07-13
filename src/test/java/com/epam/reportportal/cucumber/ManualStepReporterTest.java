@@ -43,6 +43,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.epam.reportportal.cucumber.integration.util.TestUtils.extractJsonParts;
+import static com.epam.reportportal.cucumber.integration.util.TestUtils.filterLogs;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.same;
@@ -130,10 +131,7 @@ public class ManualStepReporterTest {
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(client, times(5)).log(logCaptor.capture());
 		StartTestItemRQ firstStep = firstStepCaptor.getValue();
-		List<SaveLogRQ> logs = logCaptor.getAllValues()
-				.stream()
-				.flatMap(l -> extractJsonParts(l).stream())
-				.collect(Collectors.toList());
+		List<SaveLogRQ> logs = filterLogs(logCaptor, l -> true);
 		SaveLogRQ firstStepLog = logs.get(0);
 
 		verifyStepStart(firstStep, ManualStepReporterSteps.FIRST_NAME);
@@ -197,10 +195,7 @@ public class ManualStepReporterTest {
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(client, times(5)).log(logCaptor.capture());
 		StartTestItemRQ firstStep = firstStepCaptor.getValue();
-		List<SaveLogRQ> logs = logCaptor.getAllValues()
-				.stream()
-				.flatMap(l -> extractJsonParts(l).stream())
-				.collect(Collectors.toList());
+		List<SaveLogRQ> logs = filterLogs(logCaptor, l -> true);
 
 		SaveLogRQ firstStepLog = logs.get(0);
 		verifyStepStart(firstStep, ManualStepReporterSteps.FIRST_NAME);

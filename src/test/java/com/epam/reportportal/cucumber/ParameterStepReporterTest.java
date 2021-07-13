@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static com.epam.reportportal.cucumber.integration.util.TestUtils.extractJsonParts;
+import static com.epam.reportportal.cucumber.integration.util.TestUtils.filterLogs;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.any;
@@ -87,8 +87,10 @@ public class ParameterStepReporterTest {
 	}
 
 	private static final String DOCSTRING_PARAM = "My very long parameter\nWith some new lines";
-	private static final String TABLE_PARAM =
-			Utils.formatDataTable(Arrays.asList(Arrays.asList("key","value"), Arrays.asList("myKey","myValue")));
+	private static final String TABLE_PARAM = Utils.formatDataTable(Arrays.asList(
+			Arrays.asList("key", "value"),
+			Arrays.asList("myKey", "myValue")
+	));
 
 	private final String launchId = CommonUtils.namedId("launch_");
 	private final String suiteId = CommonUtils.namedId("suite_");
@@ -109,8 +111,7 @@ public class ParameterStepReporterTest {
 		TestStepReporter.RP.set(reportPortal);
 	}
 
-	public static final List<Pair<String, Object>> PARAMETERS = Arrays.asList(
-			Pair.of("java.lang.String", "\"first\""),
+	public static final List<Pair<String, Object>> PARAMETERS = Arrays.asList(Pair.of("java.lang.String", "\"first\""),
 			Pair.of("int", 123),
 			Pair.of("java.lang.String", "\"second\""),
 			Pair.of("int", 12345),
@@ -118,8 +119,7 @@ public class ParameterStepReporterTest {
 			Pair.of("int", 12345678)
 	);
 
-	public static final List<String> STEP_NAMES = Arrays.asList(
-			String.format("When I have parameter %s", PARAMETERS.get(0).getValue()),
+	public static final List<String> STEP_NAMES = Arrays.asList(String.format("When I have parameter %s", PARAMETERS.get(0).getValue()),
 			String.format("Then I emit number %s on level info", PARAMETERS.get(1).getValue().toString()),
 			String.format("When I have parameter %s", PARAMETERS.get(2).getValue()),
 			String.format("Then I emit number %s on level info", PARAMETERS.get(3).getValue().toString()),
@@ -224,10 +224,7 @@ public class ParameterStepReporterTest {
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(client, times(2)).log(logCaptor.capture());
-		List<String> logs = logCaptor.getAllValues()
-				.stream()
-				.flatMap(l -> extractJsonParts(l).stream())
-				.filter(l -> l.getItemUuid().equals(tests.get(0).getValue().get(1)))
+		List<String> logs = filterLogs(logCaptor, l -> l.getItemUuid().equals(tests.get(0).getValue().get(1))).stream()
 				.map(SaveLogRQ::getMessage)
 				.collect(Collectors.toList());
 
@@ -253,10 +250,7 @@ public class ParameterStepReporterTest {
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(client, times(1)).log(logCaptor.capture());
 
-		List<String> logs = logCaptor.getAllValues()
-				.stream()
-				.flatMap(l -> extractJsonParts(l).stream())
-				.filter(l -> l.getItemUuid().equals(tests.get(0).getValue().get(0)))
+		List<String> logs = filterLogs(logCaptor, l -> l.getItemUuid().equals(tests.get(0).getValue().get(0))).stream()
 				.map(SaveLogRQ::getMessage)
 				.collect(Collectors.toList());
 
