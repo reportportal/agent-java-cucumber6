@@ -113,11 +113,11 @@ public class EmbeddingTest {
 		TestStepReporter.RP.set(reportPortal);
 	}
 
-	private List<SaveLogRQ> getLogsWithFiles(ArgumentCaptor<List<MultipartBody.Part>> logCaptor) {
+	private static List<SaveLogRQ> getLogsWithFiles(ArgumentCaptor<List<MultipartBody.Part>> logCaptor) {
 		return filterLogs(logCaptor, l -> Objects.nonNull(l.getFile()));
 	}
 
-	private List<MultipartBody.Part> getLogFiles(String name, ArgumentCaptor<List<MultipartBody.Part>> logCaptor) {
+	private static List<MultipartBody.Part> getLogFiles(String name, ArgumentCaptor<List<MultipartBody.Part>> logCaptor) {
 		return logCaptor.getAllValues()
 				.stream()
 				.flatMap(Collection::stream)
