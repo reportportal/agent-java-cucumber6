@@ -24,10 +24,7 @@ import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
 import com.epam.reportportal.service.tree.TestItemTree;
-import com.epam.reportportal.utils.AttributeParser;
-import com.epam.reportportal.utils.MemoizingSupplier;
-import com.epam.reportportal.utils.ParameterUtils;
-import com.epam.reportportal.utils.TestCaseIdUtils;
+import com.epam.reportportal.utils.*;
 import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
@@ -35,22 +32,18 @@ import com.epam.ta.reportportal.ws.model.ParameterResource;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
+import com.google.common.io.ByteSource;
 import io.cucumber.messages.Messages;
 import io.cucumber.plugin.ConcurrentEventListener;
 import io.cucumber.plugin.event.*;
 import io.reactivex.Maybe;
+import okhttp3.MediaType;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tika.Tika;
-import org.apache.tika.mime.MediaType;
-import org.apache.tika.mime.MimeTypeException;
-import org.apache.tika.mime.MimeTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rp.com.google.common.io.ByteSource;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -252,7 +245,11 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 * @param scenarioContext current scenario context
 	 */
 	protected void beforeScenario(RunningContext.FeatureContext featureContext, RunningContext.ScenarioContext scenarioContext) {
-		String scenarioName = Utils.buildName(scenarioContext.getKeyword(), AbstractReporter.COLON_INFIX, scenarioContext.getTestCase().getName());
+		String scenarioName = Utils.buildName(
+				scenarioContext.getKeyword(),
+				AbstractReporter.COLON_INFIX,
+				scenarioContext.getTestCase().getName()
+		);
 		RunningContext.RuleContext rule = scenarioContext.getRule();
 		RunningContext.RuleContext currentRule = featureContext.getCurrentRule();
 		if (currentRule == null) {
@@ -502,24 +499,12 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		}
 	}
 
-	private static final ThreadLocal<Tika> TIKA_THREAD_LOCAL = ThreadLocal.withInitial(Tika::new);
-
-	private volatile MimeTypes mimeTypes = null;
-
-	private MimeTypes getMimeTypes() {
-		if (mimeTypes == null) {
-			mimeTypes = MimeTypes.getDefaultMimeTypes();
-		}
-		return mimeTypes;
-	}
-
 	@Nullable
-	private static String getDataType(byte[] data) {
+	private static String getDataType(@Nonnull byte[] data, @Nullable String name) {
 		try {
-			return TIKA_THREAD_LOCAL.get().detect(new ByteArrayInputStream(data));
+			return MimeTypeDetector.detect(ByteSource.wrap(data), name);
 		} catch (IOException e) {
-			// nothing to do we will use bypassed mime type
-			LOGGER.warn("Mime-type not found", e);
+			LOGGER.warn("Unable to detect MIME type", e);
 		}
 		return null;
 	}
@@ -531,18 +516,18 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 * @param mimeType attachment type
 	 * @param data     data to attach
 	 */
-	protected void embedding(@Nullable String name, String mimeType, byte[] data) {
-		String type = ofNullable(getDataType(data)).orElse(mimeType);
-		String attachmentName = ofNullable(name).filter(m -> !m.isEmpty()).orElseGet(() -> {
-			try {
-				MediaType mt = getMimeTypes().forName(type).getType();
-				return mt.getType();
-			} catch (MimeTypeException e) {
-				LOGGER.warn("Mime-type not found", e);
+	protected void embedding(@Nullable String name, @Nullable String mimeType, @Nonnull byte[] data) {
+		String type = ofNullable(mimeType).filter(m->{
+			try{
+				MediaType.get(m);
+				return true;
+			} catch (IllegalArgumentException e) {
+				LOGGER.warn("Incorrect media type '{}'", m);
+				return false;
 			}
-			return "";
-		});
-
+		}).orElseGet(() -> getDataType(data, name));
+		String attachmentName = ofNullable(name).filter(m -> !m.isEmpty())
+				.orElseGet(() -> ofNullable(type).map(t -> t.substring(0, t.indexOf("/"))).orElse(""));
 		ReportPortal.emitLog(new ReportPortalMessage(ByteSource.wrap(data), type, attachmentName),
 				"UNKNOWN",
 				Calendar.getInstance().getTime()
@@ -1043,10 +1028,10 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 				.collect(Collectors.toList())).orElse(Collections.emptyList());
 		ofNullable(pickleStepTestStep.getStep().getArgument()).ifPresent(a -> {
 			String value;
-			if(a instanceof DocStringArgument) {
+			if (a instanceof DocStringArgument) {
 				value = ((DocStringArgument) a).getContent();
 			} else if (a instanceof DataTableArgument) {
-				value = formatDataTable(((DataTableArgument)a).cells());
+				value = formatDataTable(((DataTableArgument) a).cells());
 			} else {
 				value = a.toString();
 			}

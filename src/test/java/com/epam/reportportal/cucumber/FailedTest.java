@@ -22,7 +22,6 @@ import com.epam.reportportal.cucumber.integration.feature.FailedSteps;
 import com.epam.reportportal.cucumber.integration.util.TestUtils;
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.util.test.CommonUtils;
@@ -30,6 +29,7 @@ import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.cucumber.testng.AbstractTestNGCucumberTests;
 import io.cucumber.testng.CucumberOptions;
+import okhttp3.MultipartBody;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,6 +41,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
+import static com.epam.reportportal.cucumber.integration.util.TestUtils.extractJsonParts;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
@@ -89,6 +90,7 @@ public class FailedTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	public void verify_failed_step_reporting_scenario_reporter() {
 		TestUtils.runTests(FailedScenarioReporter.class);
 
@@ -104,17 +106,11 @@ public class FailedTest {
 		List<FinishTestItemRQ> finishRqs = finishCaptor.getAllValues();
 		finishRqs.subList(0, finishRqs.size() - 1).forEach(e->assertThat(e.getStatus(), equalTo(ItemStatus.FAILED.name())));
 
-		ArgumentCaptor<MultiPartRequest> logRqCaptor = ArgumentCaptor.forClass(MultiPartRequest.class);
-		verify(client, atLeastOnce()).log(logRqCaptor.capture());
+		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
+		verify(client, atLeastOnce()).log(logCaptor.capture());
 
-		List<MultiPartRequest> logs = logRqCaptor.getAllValues();
-		List<SaveLogRQ> expectedErrorList = logs.stream()
-				.flatMap(l -> l.getSerializedRQs().stream())
-				.map(MultiPartRequest.MultiPartSerialized::getRequest)
-				.filter(l -> l instanceof List)
-				.flatMap(l -> ((List<?>) l).stream())
-				.filter(l -> l instanceof SaveLogRQ)
-				.map(l -> (SaveLogRQ) l)
+		List<SaveLogRQ> expectedErrorList = logCaptor.getAllValues().stream()
+				.flatMap(l -> extractJsonParts(l).stream())
 				.filter(l -> l.getMessage() != null && l.getMessage().startsWith(EXPECTED_ERROR))
 				.collect(Collectors.toList());
 		assertThat(expectedErrorList, hasSize(1));
@@ -123,6 +119,7 @@ public class FailedTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	public void verify_failed_step_reporting_step_reporter() {
 		TestUtils.runTests(FailedStepReporter.class);
 
@@ -135,17 +132,11 @@ public class FailedTest {
 
 		finishCaptor.getAllValues().forEach(e->assertThat(e.getStatus(), equalTo(ItemStatus.FAILED.name())));
 
-		ArgumentCaptor<MultiPartRequest> logRqCaptor = ArgumentCaptor.forClass(MultiPartRequest.class);
-		verify(client, atLeastOnce()).log(logRqCaptor.capture());
+		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
+		verify(client, atLeastOnce()).log(logCaptor.capture());
 
-		List<MultiPartRequest> logs = logRqCaptor.getAllValues();
-		List<SaveLogRQ> expectedErrorList = logs.stream()
-				.flatMap(l -> l.getSerializedRQs().stream())
-				.map(MultiPartRequest.MultiPartSerialized::getRequest)
-				.filter(l -> l instanceof List)
-				.flatMap(l -> ((List<?>) l).stream())
-				.filter(l -> l instanceof SaveLogRQ)
-				.map(l -> (SaveLogRQ) l)
+		List<SaveLogRQ> expectedErrorList = logCaptor.getAllValues().stream()
+				.flatMap(l -> extractJsonParts(l).stream())
 				.filter(l -> l.getMessage() != null && l.getMessage().startsWith(EXPECTED_ERROR))
 				.collect(Collectors.toList());
 		assertThat(expectedErrorList, hasSize(1));

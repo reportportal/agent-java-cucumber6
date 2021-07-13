@@ -20,7 +20,6 @@ import com.epam.reportportal.cucumber.integration.TestScenarioReporter;
 import com.epam.reportportal.cucumber.integration.TestStepReporter;
 import com.epam.reportportal.cucumber.integration.util.TestUtils;
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.util.test.CommonUtils;
@@ -81,23 +80,25 @@ public class HooksTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	public void verify_before_after_reported_in_steps() {
 		TestUtils.runTests(MyStepReporter.class);
 
 		verify(client, times(1)).startTestItem(any());
 		verify(client, times(1)).startTestItem(same(suiteId), any());
 		verify(client, times(8)).startTestItem(same(testId), any());
-		verify(client, times(14)).log(any(MultiPartRequest.class));
+		verify(client, times(14)).log(any(List.class));
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	public void verify_before_after_not_reported_in_steps() {
 		TestUtils.runTests(MyStepReporter2.class);
 
 		verify(client, times(1)).startTestItem(any());
 		verify(client, times(1)).startTestItem(same(suiteId), any());
 		verify(client, times(2)).startTestItem(same(testId), any());
-		verify(client, times(2)).log(any(MultiPartRequest.class));
+		verify(client, times(2)).log(any(List.class));
 
 	}
 }

@@ -29,8 +29,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import rp.com.google.common.collect.Lists;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -93,7 +93,7 @@ public class LaunchSystemAttributesTest {
 
 		assertThat(startLaunchRequest.getAttributes(), notNullValue());
 
-		List<ItemAttributesRQ> attributes = Lists.newArrayList(startLaunchRequest.getAttributes());
+		List<ItemAttributesRQ> attributes = new ArrayList<>(startLaunchRequest.getAttributes());
 
 		for (int index = 0; index < attributes.size(); index++) {
 			if (SKIPPED_ISSUE_KEY.equals(attributes.get(index).getKey())) {
