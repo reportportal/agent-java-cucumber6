@@ -5,7 +5,7 @@
 - Client version updated on [5.1.0-RC-1](https://github.com/reportportal/client-java/releases/tag/5.1.0-RC-1)
 - Version changed on 5.1.0
 ### Fixed
-- Issue #20: Scenario outlines with dynamic names not supported
+- [Issue #20](https://github.com/reportportal/agent-java-cucumber6/issues/20): Scenario outlines with dynamic names not supported
 
 ## [5.0.6]
 ### Fixed
