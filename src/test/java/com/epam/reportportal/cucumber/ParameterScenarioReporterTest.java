@@ -20,7 +20,6 @@ import com.epam.reportportal.cucumber.integration.TestScenarioReporter;
 import com.epam.reportportal.cucumber.integration.TestStepReporter;
 import com.epam.reportportal.cucumber.integration.util.TestUtils;
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.util.test.CommonUtils;
@@ -29,6 +28,7 @@ import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.cucumber.testng.AbstractTestNGCucumberTests;
 import io.cucumber.testng.CucumberOptions;
+import okhttp3.MultipartBody;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,16 +36,16 @@ import org.mockito.ArgumentCaptor;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static com.epam.reportportal.cucumber.integration.util.TestUtils.filterLogs;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.hamcrest.Matchers.hasSize;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
 
 /**
@@ -73,8 +73,9 @@ public class ParameterScenarioReporterTest {
 	}
 
 	private static final String DOCSTRING_PARAM = "My very long parameter\nWith some new lines";
-	private static final String TABLE_PARAM =
-			Utils.formatDataTable(Arrays.asList(Arrays.asList("key","value"), Arrays.asList("myKey","myValue")));
+	private static final String TABLE_PARAM = Utils.formatDataTable(Arrays.asList(Arrays.asList("key", "value"),
+			Arrays.asList("myKey", "myValue")
+	));
 
 	private final String launchId = CommonUtils.namedId("launch_");
 	private final String suiteId = CommonUtils.namedId("suite_");
@@ -85,8 +86,8 @@ public class ParameterScenarioReporterTest {
 			.limit(9)
 			.collect(Collectors.toList());
 
-	private final List<Pair<String, String>> nestedStepMap = Stream.concat(
-			IntStream.range(0, 4).mapToObj(i -> Pair.of(stepIds.get(0), nestedStepIds.get(i))),
+	private final List<Pair<String, String>> nestedStepMap = Stream.concat(IntStream.range(0, 4)
+					.mapToObj(i -> Pair.of(stepIds.get(0), nestedStepIds.get(i))),
 			IntStream.range(4, 9).mapToObj(i -> Pair.of(stepIds.get(1), nestedStepIds.get(i)))
 	).collect(Collectors.toList());
 
@@ -106,8 +107,7 @@ public class ParameterScenarioReporterTest {
 
 	public static final List<Pair<String, Object>> PARAMETERS = Arrays.asList(Pair.of("str", "\"first\""), Pair.of("parameters", 123));
 
-	public static final List<String> STEP_NAMES = Arrays.asList(
-			String.format("When I have parameter %s", PARAMETERS.get(0).getValue()),
+	public static final List<String> STEP_NAMES = Arrays.asList(String.format("When I have parameter %s", PARAMETERS.get(0).getValue()),
 			String.format("Then I emit number %s on level info", PARAMETERS.get(1).getValue().toString())
 	);
 
@@ -146,20 +146,15 @@ public class ParameterScenarioReporterTest {
 		assertThat(param1.getKey(), equalTo("java.lang.String"));
 		assertThat(param1.getValue(), equalTo(DOCSTRING_PARAM));
 
-		ArgumentCaptor<MultiPartRequest> logCaptor = ArgumentCaptor.forClass(MultiPartRequest.class);
+		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(client, times(3)).log(logCaptor.capture());
-		List<String> logs = logCaptor.getAllValues()
-				.stream()
-				.flatMap(l -> l.getSerializedRQs().stream())
-				.flatMap(l -> ((List<SaveLogRQ>) l.getRequest()).stream())
-				.filter(l -> l.getItemUuid().equals(nestedStepIds.get(1)))
+		List<String> logs = filterLogs(logCaptor, l -> l.getItemUuid().equals(nestedStepIds.get(1))).stream()
 				.map(SaveLogRQ::getMessage)
 				.collect(Collectors.toList());
 
 		assertThat(logs, hasSize(2));
 		assertThat(logs, hasItem(equalTo("\"\"\"\n" + DOCSTRING_PARAM + "\n\"\"\"")));
 	}
-
 
 	@Test
 	@SuppressWarnings("unchecked")
@@ -176,13 +171,9 @@ public class ParameterScenarioReporterTest {
 		assertThat(param1.getKey(), equalTo("io.cucumber.datatable.DataTable"));
 		assertThat(param1.getValue(), equalTo(TABLE_PARAM));
 
-		ArgumentCaptor<MultiPartRequest> logCaptor = ArgumentCaptor.forClass(MultiPartRequest.class);
+		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(client, times(2)).log(logCaptor.capture());
-		List<String> logs = logCaptor.getAllValues()
-				.stream()
-				.flatMap(l -> l.getSerializedRQs().stream())
-				.flatMap(l -> ((List<SaveLogRQ>) l.getRequest()).stream())
-				.filter(l -> l.getItemUuid().equals(nestedStepIds.get(0)))
+		List<String> logs = filterLogs(logCaptor, l -> l.getItemUuid().equals(nestedStepIds.get(0))).stream()
 				.map(SaveLogRQ::getMessage)
 				.collect(Collectors.toList());
 

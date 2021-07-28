@@ -23,43 +23,49 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.util.test.CommonUtils;
+import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.cucumber.testng.AbstractTestNGCucumberTests;
 import io.cucumber.testng.CucumberOptions;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.*;
 
 /**
  * TODO: finish the test
  */
-public class HooksTest {
+public class LongStepNameTest {
 
-	@CucumberOptions(features = "src/test/resources/features/DummyScenario.feature", glue = {
-			"com.epam.reportportal.cucumber.integration.hooks" }, plugin = { "pretty",
+	@CucumberOptions(features = "src/test/resources/features/LongStepScenario.feature", glue = {
+			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
-	public static class MyStepReporter extends AbstractTestNGCucumberTests {
+	public static class StepReporter extends AbstractTestNGCucumberTests {
 
 	}
 
-	@CucumberOptions(features = "src/test/resources/features/DummyScenario.feature", glue = {
+	@CucumberOptions(features = "src/test/resources/features/LongStepScenario.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
-			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
-	public static class MyStepReporter2 extends AbstractTestNGCucumberTests {
+			"com.epam.reportportal.cucumber.integration.TestScenarioReporter" })
+	public static class ScenarioReporter extends AbstractTestNGCucumberTests {
 
 	}
 
 	private final String launchId = CommonUtils.namedId("launch_");
 	private final String suiteId = CommonUtils.namedId("suite_");
 	private final String testId = CommonUtils.namedId("test_");
-	private final List<String> stepIds = Stream.generate(() -> CommonUtils.namedId("step_")).limit(3).collect(Collectors.toList());
+	private final List<String> stepIds = Collections.singletonList(CommonUtils.namedId("step_"));
+	private final Pair<String, String> nestedStep = Pair.of(stepIds.get(0), CommonUtils.namedId("nested_step_"));
 
 	private final ListenerParameters params = TestUtils.standardParameters();
 	private final ReportPortalClient client = mock(ReportPortalClient.class);
@@ -69,6 +75,7 @@ public class HooksTest {
 	@BeforeEach
 	public void setup() {
 		TestUtils.mockLaunch(client, launchId, suiteId, testId, stepIds);
+		TestUtils.mockNestedSteps(client, nestedStep);
 		TestUtils.mockLogging(client);
 		TestScenarioReporter.RP.set(reportPortal);
 		TestStepReporter.RP.set(reportPortal);
@@ -80,26 +87,23 @@ public class HooksTest {
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
-	public void verify_before_after_reported_in_steps() {
-		TestUtils.runTests(MyStepReporter.class);
+	public void verify_long_name_truncation_step_reporter() {
+		TestUtils.runTests(StepReporter.class);
 
-		verify(client, times(1)).startTestItem(any());
-		verify(client, times(1)).startTestItem(same(suiteId), any());
-		verify(client, times(8)).startTestItem(same(testId), any());
-		verify(client, times(14)).log(any(List.class));
+		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(client).startTestItem(same(testId), captor.capture());
+
+		assertThat(captor.getValue().getName(), allOf(hasLength(1024), endsWith("...")));
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
-	public void verify_before_after_not_reported_in_steps() {
-		TestUtils.runTests(MyStepReporter2.class);
+	public void verify_long_name_truncation_scenario_reporter() {
+		TestUtils.runTests(ScenarioReporter.class);
 
-		verify(client, times(1)).startTestItem(any());
-		verify(client, times(1)).startTestItem(same(suiteId), any());
-		verify(client, times(2)).startTestItem(same(testId), any());
-		verify(client, times(2)).log(any(List.class));
+		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(client).startTestItem(same(stepIds.get(0)), captor.capture());
 
+		assertThat(captor.getValue().getName(), allOf(hasLength(1024), endsWith("...")));
 	}
 }
 

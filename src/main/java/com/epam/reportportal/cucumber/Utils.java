@@ -19,7 +19,7 @@ import com.epam.reportportal.listeners.ItemStatus;
 import io.cucumber.plugin.event.Argument;
 import io.cucumber.plugin.event.Status;
 import io.cucumber.plugin.event.TestStep;
-import rp.com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMap;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

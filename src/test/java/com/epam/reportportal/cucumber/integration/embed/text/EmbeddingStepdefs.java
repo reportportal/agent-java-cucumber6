@@ -30,7 +30,7 @@ public class EmbeddingStepdefs {
 
 	@Given("I have a dummy step to attach a text with correct mime type")
 	public void i_have_a_dummy_step_to_make_a_screenshot_correct_type() throws InterruptedException {
-		type = "image/jpeg";
+		type = "text/plain";
 		Thread.sleep(CommonUtils.MINIMAL_TEST_PAUSE);
 	}
 
