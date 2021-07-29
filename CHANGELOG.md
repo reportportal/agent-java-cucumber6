@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- Possible immutable list modification error in AbstractReporter#getParameters method
 
 ## [5.1.0-RC-1]
 ### Changed
