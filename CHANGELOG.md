@@ -1,6 +1,10 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- Client version updated on [5.1.0-RC-4](https://github.com/reportportal/client-java/releases/tag/5.1.0-RC-4)
+### Fixed
+- Possible immutable list modification error in AbstractReporter#getParameters method
 
 ## [5.1.0-RC-1]
 ### Changed
