@@ -406,7 +406,6 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	protected void afterStep(Result result) {
 		reportResult(result, null);
 		RunningContext.ScenarioContext context = getCurrentScenarioContext();
-		launch.get().getStepReporter().finishPreviousStep();
 		finishTestItem(context.getCurrentStepId(), result.getStatus());
 		context.setCurrentStepId(null);
 	}
@@ -446,7 +445,6 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 */
 	protected void afterHooks(HookType hookType) {
 		RunningContext.ScenarioContext context = getCurrentScenarioContext();
-		launch.get().getStepReporter().finishPreviousStep();
 		finishTestItem(context.getHookStepId(), context.getHookStatus());
 		context.setHookStepId(null);
 		if (hookType == HookType.AFTER_STEP) {
@@ -532,29 +530,6 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 				"UNKNOWN",
 				Calendar.getInstance().getTime()
 		);
-	}
-
-	/**
-	 * Send a log with data attached.
-	 *
-	 * @param mimeType an attachment type
-	 * @param data     data to attach
-	 * @deprecated use {@link #embedding(String, String, byte[])}
-	 */
-	@Deprecated
-	protected void embedding(String mimeType, byte[] data) {
-		embedding(null, mimeType, data);
-	}
-
-	/**
-	 * Send a log entry to Report Portal with 'INFO' level.
-	 *
-	 * @param text a log text to send
-	 * @deprecated use {@link #sendLog(String)}
-	 */
-	@Deprecated
-	protected void write(String text) {
-		sendLog(text, "INFO");
 	}
 
 	/**
@@ -734,48 +709,36 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	}
 
 	/**
+	 * Build finish test item request object
+	 *
+	 * @param itemId     item ID reference
+	 * @param finishTime a datetime object to use as item end time
+	 * @param status     item result status
+	 * @return finish request
+	 */
+	@Nonnull
+	@SuppressWarnings("unused")
+	protected FinishTestItemRQ buildFinishTestItemRequest(@Nonnull Maybe<String> itemId, @Nullable Date finishTime,
+			@Nullable ItemStatus status) {
+		FinishTestItemRQ rq = new FinishTestItemRQ();
+		ofNullable(status).ifPresent(s -> rq.setStatus(s.name()));
+		rq.setEndTime(ofNullable(finishTime).orElse(Calendar.getInstance().getTime()));
+		return rq;
+	}
+
+	/**
 	 * Finish a feature with specific date and time
 	 *
 	 * @param itemId   an ID of the item
 	 * @param dateTime a date and time object to use as feature end time
 	 */
-	protected void finishFeature(Maybe<String> itemId, Date dateTime) {
+	protected void finishFeature(@Nullable Maybe<String> itemId, @Nullable Date dateTime) {
 		if (itemId == null) {
 			LOGGER.error("BUG: Trying to finish unspecified test item.");
 			return;
 		}
-		FinishTestItemRQ rq = new FinishTestItemRQ();
-		rq.setEndTime(dateTime);
+		FinishTestItemRQ rq = buildFinishTestItemRequest(itemId, dateTime, null);
 		launch.get().finishTestItem(itemId, rq);
-	}
-
-	/**
-	 * Finish a test item with no specific status
-	 *
-	 * @param itemId an ID of the item
-	 */
-	protected void finishTestItem(Maybe<String> itemId) {
-		finishTestItem(itemId, null);
-	}
-
-	/**
-	 * Finish a test item with specified status
-	 *
-	 * @param itemId an ID of the item
-	 * @param status the status of the item
-	 * @return a date and time object of the finish event
-	 */
-	protected Date finishTestItem(Maybe<String> itemId, Status status) {
-		if (itemId == null) {
-			LOGGER.error("BUG: Trying to finish unspecified test item.");
-			return null;
-		}
-		FinishTestItemRQ rq = new FinishTestItemRQ();
-		Date endTime = Calendar.getInstance().getTime();
-		rq.setEndTime(endTime);
-		rq.setStatus(mapItemStatus(status));
-		launch.get().finishTestItem(itemId, rq);
-		return endTime;
 	}
 
 	/**
@@ -785,7 +748,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 * @return RP test item status and null if status is null
 	 */
 	@Nullable
-	protected String mapItemStatus(@Nullable Status status) {
+	protected ItemStatus mapItemStatus(@Nullable Status status) {
 		if (status == null) {
 			return null;
 		} else {
@@ -793,10 +756,37 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 				LOGGER.error(String.format("Unable to find direct mapping between Cucumber and ReportPortal for TestItem with status: '%s'.",
 						status
 				));
-				return ItemStatus.SKIPPED.name();
+				return ItemStatus.SKIPPED;
 			}
-			return STATUS_MAPPING.get(status).name();
+			return STATUS_MAPPING.get(status);
 		}
+	}
+
+	/**
+	 * Finish a test item with specified status
+	 *
+	 * @param itemId an ID of the item
+	 * @param status the status of the item
+	 * @return a date and time object of the finish event
+	 */
+	@Nullable
+	protected Date finishTestItem(@Nullable Maybe<String> itemId, @Nullable Status status) {
+		if (itemId == null) {
+			LOGGER.error("BUG: Trying to finish unspecified test item.");
+			return null;
+		}
+		FinishTestItemRQ rq = buildFinishTestItemRequest(itemId, null, mapItemStatus(status));
+		launch.get().finishTestItem(itemId, rq);
+		return rq.getEndTime();
+	}
+
+	/**
+	 * Finish a test item with no specific status
+	 *
+	 * @param itemId an ID of the item
+	 */
+	protected void finishTestItem(@Nullable Maybe<String> itemId) {
+		finishTestItem(itemId, null);
 	}
 
 	/**
@@ -958,18 +948,6 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 				.map(m -> m.getAnnotation(Attributes.class))
 				.map(AttributeParser::retrieveAttributes)
 				.orElse(null);
-	}
-
-	/**
-	 * Returns static attributes defined by {@link Attributes} annotation in code.
-	 *
-	 * @param testStep - Cucumber's TestStep object
-	 * @return a set of attributes or null if no such method provided by the match object
-	 */
-	@Nullable
-	@Deprecated
-	protected Set<ItemAttributesRQ> getAttributes(@Nonnull TestStep testStep) {
-		return ofNullable(getCodeRef(testStep)).map(this::getAttributes).orElse(null);
 	}
 
 	/**
