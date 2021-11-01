@@ -58,6 +58,7 @@ import java.util.stream.Collectors;
 import static com.epam.reportportal.cucumber.Utils.*;
 import static com.epam.reportportal.cucumber.util.ItemTreeUtils.createKey;
 import static com.epam.reportportal.cucumber.util.ItemTreeUtils.retrieveLeaf;
+import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
@@ -180,7 +181,9 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 * @param attributes  Cucumber rule's tags
 	 * @return start test item request ready to send on RP
 	 */
-	protected StartTestItemRQ buildStartRuleRequest(String name, String description, String codeRef, Set<ItemAttributesRQ> attributes) {
+	@Nonnull
+	protected StartTestItemRQ buildStartRuleRequest(@Nonnull String name, String description, @Nullable String codeRef,
+			@Nullable Set<ItemAttributesRQ> attributes) {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		rq.setDescription(description);
 		rq.setCodeRef(codeRef);
@@ -191,6 +194,22 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		return rq;
 	}
 
+	/**
+	 * Start Rule item on Report Portal
+	 *
+	 * @param featureId parent item id
+	 * @param ruleRq    Rule start request
+	 * @return hook item id
+	 */
+	@Nonnull
+	protected Maybe<String> startRule(@Nonnull Maybe<String> featureId, @Nonnull StartTestItemRQ ruleRq) {
+		return launch.get().startTestItem(featureId, ruleRq);
+	}
+
+	/**
+	 * @deprecated Use {@link AbstractReporter#startRule(Maybe, StartTestItemRQ)}
+	 */
+	@Deprecated
 	protected void startRule(@Nonnull RunningContext.FeatureContext featureContext, @Nonnull RunningContext.RuleContext ruleContext) {
 		StartTestItemRQ rq = buildStartRuleRequest(buildName(ruleContext.getKeyword(), AbstractReporter.COLON_INFIX, ruleContext.getName()),
 				ruleContext.getDescription(),
@@ -198,7 +217,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 				extractAttributes(ruleContext.getTestCase().getTags())
 		);
 
-		ruleContext.setId(launch.get().startTestItem(featureContext.getFeatureId(), rq));
+		ruleContext.setId(startRule(featureContext.getFeatureId(), rq));
 	}
 
 	protected void finishRule(@Nonnull RunningContext.RuleContext context) {
@@ -222,7 +241,8 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 * @param line     the scenario text line number
 	 * @return start test item request ready to send on RP
 	 */
-	protected StartTestItemRQ buildStartScenarioRequest(TestCase testCase, String name, URI uri, int line) {
+	@Nonnull
+	protected StartTestItemRQ buildStartScenarioRequest(@Nonnull TestCase testCase, @Nonnull String name, @Nonnull URI uri, int line) {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		rq.setName(name);
 		rq.setDescription(getDescription(testCase, uri));
@@ -239,14 +259,25 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	}
 
 	/**
+	 * Start Cucumber Scenario
+	 *
+	 * @param featureId       parent feature item id
+	 * @param startScenarioRq scenario start request
+	 * @return scenario item id
+	 */
+	@Nonnull
+	protected Maybe<String> startScenario(@Nonnull Maybe<String> featureId, @Nonnull StartTestItemRQ startScenarioRq) {
+		return launch.get().startTestItem(featureId, startScenarioRq);
+	}
+
+	/**
 	 * Start Cucumber scenario
 	 *
 	 * @param featureContext  current feature context
 	 * @param scenarioContext current scenario context
 	 */
 	protected void beforeScenario(RunningContext.FeatureContext featureContext, RunningContext.ScenarioContext scenarioContext) {
-		String scenarioName = Utils.buildName(
-				scenarioContext.getKeyword(),
+		String scenarioName = Utils.buildName(scenarioContext.getKeyword(),
 				AbstractReporter.COLON_INFIX,
 				scenarioContext.getTestCase().getName()
 		);
@@ -272,12 +303,11 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 			}
 		}
 
-		Launch myLaunch = launch.get();
 		Maybe<String> rootId = rule == null ? featureContext.getFeatureId() : rule.getId();
-		scenarioContext.setId(myLaunch.startTestItem(rootId,
+		scenarioContext.setId(startScenario(rootId,
 				buildStartScenarioRequest(scenarioContext.getTestCase(), scenarioName, featureContext.getUri(), scenarioContext.getLine())
 		));
-		if (myLaunch.getParameters().isCallbackReportingEnabled()) {
+		if (launch.get().getParameters().isCallbackReportingEnabled()) {
 			addToTree(featureContext, scenarioContext);
 		}
 	}
@@ -364,7 +394,8 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 * @param keyword    a step keyword (e.g. 'Given')
 	 * @return a Request to ReportPortal
 	 */
-	protected StartTestItemRQ buildStartStepRequest(TestStep testStep, String stepPrefix, String keyword) {
+	@Nonnull
+	protected StartTestItemRQ buildStartStepRequest(@Nonnull TestStep testStep, @Nullable String stepPrefix, @Nullable String keyword) {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		rq.setName(Utils.buildName(stepPrefix, keyword, getStepName(testStep)));
 		rq.setDescription(buildMultilineArgument(testStep));
@@ -379,21 +410,32 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	}
 
 	/**
+	 * Start Step item on Report Portal
+	 *
+	 * @param scenarioId  parent scenario item id
+	 * @param startStepRq step start request
+	 * @return step item id
+	 */
+	@Nonnull
+	protected Maybe<String> startStep(@Nonnull Maybe<String> scenarioId, @Nonnull StartTestItemRQ startStepRq) {
+		return launch.get().startTestItem(scenarioId, startStepRq);
+	}
+
+	/**
 	 * Start Cucumber step
 	 *
 	 * @param testStep a cucumber step object
 	 */
-	protected void beforeStep(TestStep testStep) {
+	protected void beforeStep(@Nonnull TestStep testStep) {
 		RunningContext.ScenarioContext context = getCurrentScenarioContext();
 		Messages.GherkinDocument.Feature.Step step = context.getStep(testStep);
 		StartTestItemRQ rq = buildStartStepRequest(testStep, context.getStepPrefix(), step.getKeyword());
-		Launch myLaunch = launch.get();
-		Maybe<String> stepId = myLaunch.startTestItem(context.getId(), rq);
+		Maybe<String> stepId = startStep(context.getId(), rq);
 		context.setCurrentStepId(stepId);
 		String stepText = step.getText();
 		context.setCurrentText(stepText);
 
-		if (myLaunch.getParameters().isCallbackReportingEnabled()) {
+		if (launch.get().getParameters().isCallbackReportingEnabled()) {
 			addToTree(context, stepText, stepId);
 		}
 	}
@@ -403,10 +445,9 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 *
 	 * @param result Step result
 	 */
-	protected void afterStep(Result result) {
+	protected void afterStep(@Nonnull Result result) {
 		reportResult(result, null);
 		RunningContext.ScenarioContext context = getCurrentScenarioContext();
-		launch.get().getStepReporter().finishPreviousStep();
 		finishTestItem(context.getCurrentStepId(), result.getStatus());
 		context.setCurrentStepId(null);
 	}
@@ -417,7 +458,8 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 * @param hookType a cucumber hook type object
 	 * @return Request to ReportPortal
 	 */
-	protected StartTestItemRQ buildStartHookRequest(HookType hookType) {
+	@Nonnull
+	protected StartTestItemRQ buildStartHookRequest(@Nonnull HookType hookType) {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		Pair<String, String> typeName = getHookTypeAndName(hookType);
 		rq.setType(typeName.getKey());
@@ -427,15 +469,27 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	}
 
 	/**
+	 * Start before/after-hook item on Report Portal
+	 *
+	 * @param parentId parent item id
+	 * @param rq       hook start request
+	 * @return hook item id
+	 */
+	@Nonnull
+	protected Maybe<String> startHook(@Nonnull Maybe<String> parentId, @Nonnull StartTestItemRQ rq) {
+		return launch.get().startTestItem(parentId, rq);
+	}
+
+	/**
 	 * Called when before/after-hooks are started
 	 *
 	 * @param hookType a hook type
 	 */
-	protected void beforeHooks(HookType hookType) {
+	protected void beforeHooks(@Nonnull HookType hookType) {
 		StartTestItemRQ rq = buildStartHookRequest(hookType);
 
 		RunningContext.ScenarioContext context = getCurrentScenarioContext();
-		context.setHookStepId(launch.get().startTestItem(context.getId(), rq));
+		context.setHookStepId(startHook(context.getId(), rq));
 		context.setHookStatus(Status.PASSED);
 	}
 
@@ -446,7 +500,6 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 */
 	protected void afterHooks(HookType hookType) {
 		RunningContext.ScenarioContext context = getCurrentScenarioContext();
-		launch.get().getStepReporter().finishPreviousStep();
 		finishTestItem(context.getHookStepId(), context.getHookStatus());
 		context.setHookStepId(null);
 		if (hookType == HookType.AFTER_STEP) {
@@ -489,7 +542,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 * @param result  - Cucumber result object
 	 * @param message - optional message to be logged in addition
 	 */
-	protected void reportResult(Result result, String message) {
+	protected void reportResult(@Nonnull Result result, @Nullable String message) {
 		String level = mapLevel(result.getStatus());
 		if (message != null) {
 			sendLog(message, level);
@@ -517,8 +570,8 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 * @param data     data to attach
 	 */
 	protected void embedding(@Nullable String name, @Nullable String mimeType, @Nonnull byte[] data) {
-		String type = ofNullable(mimeType).filter(m->{
-			try{
+		String type = ofNullable(mimeType).filter(m -> {
+			try {
 				MediaType.get(m);
 				return true;
 			} catch (IllegalArgumentException e) {
@@ -535,34 +588,11 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	}
 
 	/**
-	 * Send a log with data attached.
-	 *
-	 * @param mimeType an attachment type
-	 * @param data     data to attach
-	 * @deprecated use {@link #embedding(String, String, byte[])}
-	 */
-	@Deprecated
-	protected void embedding(String mimeType, byte[] data) {
-		embedding(null, mimeType, data);
-	}
-
-	/**
-	 * Send a log entry to Report Portal with 'INFO' level.
-	 *
-	 * @param text a log text to send
-	 * @deprecated use {@link #sendLog(String)}
-	 */
-	@Deprecated
-	protected void write(String text) {
-		sendLog(text, "INFO");
-	}
-
-	/**
 	 * Send a text log entry to Report Portal with 'INFO' level, using current datetime as timestamp
 	 *
 	 * @param message a text message
 	 */
-	protected void sendLog(String message) {
+	protected void sendLog(@Nullable String message) {
 		sendLog(message, "INFO");
 	}
 
@@ -572,11 +602,11 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 * @param message a text message
 	 * @param level   a log level, see standard Log4j / logback logging levels
 	 */
-	protected void sendLog(final String message, final String level) {
+	protected void sendLog(@Nullable final String message, @Nullable final String level) {
 		ReportPortal.emitLog(message, level, Calendar.getInstance().getTime());
 	}
 
-	private boolean isBefore(TestStep step) {
+	private boolean isBefore(@Nonnull TestStep step) {
 		return HookType.BEFORE == ((HookTestStep) step).getHookType();
 	}
 
@@ -590,7 +620,8 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 * @param uri     a path to the feature
 	 * @return Request to ReportPortal
 	 */
-	protected StartTestItemRQ buildStartFeatureRequest(Messages.GherkinDocument.Feature feature, URI uri) {
+	@Nonnull
+	protected StartTestItemRQ buildStartFeatureRequest(@Nonnull Messages.GherkinDocument.Feature feature, @Nonnull URI uri) {
 		String featureKeyword = feature.getKeyword();
 		String featureName = feature.getName();
 		StartTestItemRQ startFeatureRq = new StartTestItemRQ();
@@ -601,13 +632,6 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		startFeatureRq.setStartTime(Calendar.getInstance().getTime());
 		startFeatureRq.setType(getFeatureTestItemType());
 		return startFeatureRq;
-	}
-
-	private RunningContext.FeatureContext startFeatureContext(RunningContext.FeatureContext context) {
-		Optional<Maybe<String>> root = getRootItemId();
-		StartTestItemRQ rq = buildStartFeatureRequest(context.getFeature(), context.getUri());
-		context.setFeatureId(root.map(r -> launch.get().startTestItem(r, rq)).orElseGet(() -> launch.get().startTestItem(rq)));
-		return context;
 	}
 
 	protected EventHandler<TestRunStarted> getTestRunStartedHandler() {
@@ -670,16 +694,29 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		ITEM_TREE.getTestItems().put(createKey(context.getUri()), TestItemTree.createTestItemLeaf(context.getFeatureId()));
 	}
 
-	protected void handleStartOfTestCase(TestCaseStarted event) {
+	/**
+	 * Start Cucumber Feature
+	 *
+	 * @param startFeatureRq feature start request
+	 * @return feature item id
+	 */
+	@Nonnull
+	protected Maybe<String> startFeature(@Nonnull StartTestItemRQ startFeatureRq) {
+		Optional<Maybe<String>> root = getRootItemId();
+		return root.map(r -> launch.get().startTestItem(r, startFeatureRq)).orElseGet(() -> launch.get().startTestItem(startFeatureRq));
+	}
+
+	protected void handleStartOfTestCase(@Nonnull TestCaseStarted event) {
 		TestCase testCase = event.getTestCase();
 		RunningContext.FeatureContext newFeatureContext = new RunningContext.FeatureContext(testCase);
 		URI featureUri = newFeatureContext.getUri();
 		RunningContext.FeatureContext featureContext = currentFeatureContextMap.computeIfAbsent(featureUri, u -> {
-			RunningContext.FeatureContext c = startFeatureContext(newFeatureContext);
+			getRootItemId(); // trigger root item creation
+			newFeatureContext.setFeatureId(startFeature(buildStartFeatureRequest(newFeatureContext.getFeature(), featureUri)));
 			if (launch.get().getParameters().isCallbackReportingEnabled()) {
-				addToTree(c);
+				addToTree(newFeatureContext);
 			}
-			return c;
+			return newFeatureContext;
 		});
 
 		if (!featureContext.getUri().equals(testCase.getUri())) {
@@ -697,7 +734,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		beforeScenario(featureContext, scenarioContext);
 	}
 
-	protected void handleTestStepStarted(TestStepStarted event) {
+	protected void handleTestStepStarted(@Nonnull TestStepStarted event) {
 		TestStep testStep = event.getTestStep();
 		if (testStep instanceof HookTestStep) {
 			beforeHooks(((HookTestStep) testStep).getHookType());
@@ -709,7 +746,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		}
 	}
 
-	protected void handleTestStepFinished(TestStepFinished event) {
+	protected void handleTestStepFinished(@Nonnull TestStepFinished event) {
 		if (event.getTestStep() instanceof HookTestStep) {
 			HookTestStep hookTestStep = (HookTestStep) event.getTestStep();
 			hookFinished(hookTestStep, event.getResult(), isBefore(event.getTestStep()));
@@ -719,7 +756,8 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		}
 	}
 
-	protected void addToTree(RunningContext.ScenarioContext scenarioContext, String text, Maybe<String> stepId) {
+	protected void addToTree(@Nonnull RunningContext.ScenarioContext scenarioContext, @Nullable String text,
+			@Nullable Maybe<String> stepId) {
 		retrieveLeaf(scenarioContext.getFeatureUri(),
 				scenarioContext.getLine(),
 				ITEM_TREE
@@ -734,48 +772,36 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	}
 
 	/**
+	 * Build finish test item request object
+	 *
+	 * @param itemId     item ID reference
+	 * @param finishTime a datetime object to use as item end time
+	 * @param status     item result status
+	 * @return finish request
+	 */
+	@Nonnull
+	@SuppressWarnings("unused")
+	protected FinishTestItemRQ buildFinishTestItemRequest(@Nonnull Maybe<String> itemId, @Nullable Date finishTime,
+			@Nullable ItemStatus status) {
+		FinishTestItemRQ rq = new FinishTestItemRQ();
+		ofNullable(status).ifPresent(s -> rq.setStatus(s.name()));
+		rq.setEndTime(ofNullable(finishTime).orElse(Calendar.getInstance().getTime()));
+		return rq;
+	}
+
+	/**
 	 * Finish a feature with specific date and time
 	 *
 	 * @param itemId   an ID of the item
 	 * @param dateTime a date and time object to use as feature end time
 	 */
-	protected void finishFeature(Maybe<String> itemId, Date dateTime) {
+	protected void finishFeature(@Nullable Maybe<String> itemId, @Nullable Date dateTime) {
 		if (itemId == null) {
 			LOGGER.error("BUG: Trying to finish unspecified test item.");
 			return;
 		}
-		FinishTestItemRQ rq = new FinishTestItemRQ();
-		rq.setEndTime(dateTime);
+		FinishTestItemRQ rq = buildFinishTestItemRequest(itemId, dateTime, null);
 		launch.get().finishTestItem(itemId, rq);
-	}
-
-	/**
-	 * Finish a test item with no specific status
-	 *
-	 * @param itemId an ID of the item
-	 */
-	protected void finishTestItem(Maybe<String> itemId) {
-		finishTestItem(itemId, null);
-	}
-
-	/**
-	 * Finish a test item with specified status
-	 *
-	 * @param itemId an ID of the item
-	 * @param status the status of the item
-	 * @return a date and time object of the finish event
-	 */
-	protected Date finishTestItem(Maybe<String> itemId, Status status) {
-		if (itemId == null) {
-			LOGGER.error("BUG: Trying to finish unspecified test item.");
-			return null;
-		}
-		FinishTestItemRQ rq = new FinishTestItemRQ();
-		Date endTime = Calendar.getInstance().getTime();
-		rq.setEndTime(endTime);
-		rq.setStatus(mapItemStatus(status));
-		launch.get().finishTestItem(itemId, rq);
-		return endTime;
 	}
 
 	/**
@@ -785,7 +811,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 * @return RP test item status and null if status is null
 	 */
 	@Nullable
-	protected String mapItemStatus(@Nullable Status status) {
+	protected ItemStatus mapItemStatus(@Nullable Status status) {
 		if (status == null) {
 			return null;
 		} else {
@@ -793,10 +819,37 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 				LOGGER.error(String.format("Unable to find direct mapping between Cucumber and ReportPortal for TestItem with status: '%s'.",
 						status
 				));
-				return ItemStatus.SKIPPED.name();
+				return ItemStatus.SKIPPED;
 			}
-			return STATUS_MAPPING.get(status).name();
+			return STATUS_MAPPING.get(status);
 		}
+	}
+
+	/**
+	 * Finish a test item with specified status
+	 *
+	 * @param itemId an ID of the item
+	 * @param status the status of the item
+	 * @return a date and time object of the finish event
+	 */
+	@Nullable
+	protected Date finishTestItem(@Nullable Maybe<String> itemId, @Nullable Status status) {
+		if (itemId == null) {
+			LOGGER.error("BUG: Trying to finish unspecified test item.");
+			return null;
+		}
+		FinishTestItemRQ rq = buildFinishTestItemRequest(itemId, null, mapItemStatus(status));
+		launch.get().finishTestItem(itemId, rq);
+		return rq.getEndTime();
+	}
+
+	/**
+	 * Finish a test item with no specific status
+	 *
+	 * @param itemId an ID of the item
+	 */
+	protected void finishTestItem(@Nullable Maybe<String> itemId) {
+		finishTestItem(itemId, null);
 	}
 
 	/**
@@ -884,25 +937,26 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 */
 	@Nullable
 	protected String getCodeRef(@Nonnull TestStep testStep) {
-		Field definitionMatchField = getDefinitionMatchField(testStep);
-
-		if (definitionMatchField != null) {
+		return ofNullable(getDefinitionMatchField(testStep)).flatMap(match -> {
 			try {
-				Object stepDefinitionMatch = definitionMatchField.get(testStep);
+				Object stepDefinitionMatch = match.get(testStep);
 				Field stepDefinitionField = stepDefinitionMatch.getClass().getDeclaredField(STEP_DEFINITION_FIELD_NAME);
 				stepDefinitionField.setAccessible(true);
 				Object javaStepDefinition = stepDefinitionField.get(stepDefinitionMatch);
 				Method getLocationMethod = javaStepDefinition.getClass().getMethod(GET_LOCATION_METHOD_NAME);
 				getLocationMethod.setAccessible(true);
-				String fullCodeRef = String.valueOf(getLocationMethod.invoke(javaStepDefinition));
-				return fullCodeRef != null ? fullCodeRef.substring(0, fullCodeRef.indexOf(METHOD_OPENING_BRACKET)) : null;
-			} catch (NoSuchFieldException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-				return null;
+				return of(String.valueOf(getLocationMethod.invoke(javaStepDefinition))).filter(r -> !r.isEmpty()).map(r -> {
+					int openingBracketIndex = r.indexOf(METHOD_OPENING_BRACKET);
+					if (openingBracketIndex > 0) {
+						return r.substring(0, r.indexOf(METHOD_OPENING_BRACKET));
+					} else {
+						return r;
+					}
+				});
+			} catch (NoSuchFieldException | NoSuchMethodException | IllegalAccessException | InvocationTargetException ignore) {
 			}
-
-		} else {
-			return null;
-		}
+			return Optional.empty();
+		}).orElseGet(testStep::getCodeLocation);
 	}
 
 	/**
@@ -957,18 +1011,6 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 				.map(m -> m.getAnnotation(Attributes.class))
 				.map(AttributeParser::retrieveAttributes)
 				.orElse(null);
-	}
-
-	/**
-	 * Returns static attributes defined by {@link Attributes} annotation in code.
-	 *
-	 * @param testStep - Cucumber's TestStep object
-	 * @return a set of attributes or null if no such method provided by the match object
-	 */
-	@Nullable
-	@Deprecated
-	protected Set<ItemAttributesRQ> getAttributes(@Nonnull TestStep testStep) {
-		return ofNullable(getCodeRef(testStep)).map(this::getAttributes).orElse(null);
 	}
 
 	/**
