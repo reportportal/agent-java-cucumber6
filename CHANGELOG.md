@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.1.0-RC-4]
 ### Added
 - Feature / Scenario / Step / Rule / Hook start methods which are overridable
 - JSR-305 annotations
