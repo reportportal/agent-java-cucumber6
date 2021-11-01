@@ -22,6 +22,7 @@ import io.cucumber.plugin.event.TestStep;
 import io.reactivex.Maybe;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.Calendar;
 import java.util.Optional;
 
@@ -62,14 +63,15 @@ public class ScenarioReporter extends AbstractReporter {
 	}
 
 	@Override
-	protected StartTestItemRQ buildStartStepRequest(TestStep testStep, String stepPrefix, String keyword) {
+	@Nonnull
+	protected StartTestItemRQ buildStartStepRequest(@Nonnull TestStep testStep, @Nullable String stepPrefix, @Nullable String keyword) {
 		StartTestItemRQ rq = super.buildStartStepRequest(testStep, stepPrefix, keyword);
 		rq.setHasStats(false);
 		return rq;
 	}
 
 	@Override
-	protected void beforeStep(TestStep testStep) {
+	protected void beforeStep(@Nonnull TestStep testStep) {
 		super.beforeStep(testStep);
 		String description = buildMultilineArgument(testStep).trim();
 		if (!description.isEmpty()) {
@@ -78,7 +80,8 @@ public class ScenarioReporter extends AbstractReporter {
 	}
 
 	@Override
-	protected StartTestItemRQ buildStartHookRequest(HookType hookType) {
+	@Nonnull
+	protected StartTestItemRQ buildStartHookRequest(@Nonnull HookType hookType) {
 		StartTestItemRQ rq = super.buildStartHookRequest(hookType);
 		rq.setHasStats(false);
 		return rq;
