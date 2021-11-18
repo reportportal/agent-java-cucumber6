@@ -18,6 +18,7 @@ package com.epam.reportportal.cucumber;
 
 import com.epam.reportportal.cucumber.integration.util.TestUtils;
 import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
@@ -30,6 +31,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -66,7 +68,13 @@ public class LaunchSystemAttributesTest {
 	public void initLaunch() {
 		MockitoAnnotations.initMocks(this);
 		ListenerParameters listenerParameters = TestUtils.standardParameters();
-		StepReporter.setReportPortal(ReportPortal.create(reportPortalClient, listenerParameters));
+		stepReporter = new StepReporter(){
+			@Override
+			@Nonnull
+			public ReportPortal getReportPortal() {
+				return ReportPortal.create(reportPortalClient, listenerParameters);
+			}
+		};
 		stepReporter = new StepReporter() {
 			@Override
 			protected ReportPortal buildReportPortal() {
@@ -84,7 +92,7 @@ public class LaunchSystemAttributesTest {
 
 		stepReporter.beforeLaunch();
 
-		stepReporter.launch.get().start().blockingGet();
+		stepReporter.getLaunch().start().blockingGet();
 
 		ArgumentCaptor<StartLaunchRQ> launchRQArgumentCaptor = ArgumentCaptor.forClass(StartLaunchRQ.class);
 		verify(reportPortalClient, times(1)).startLaunch(launchRQArgumentCaptor.capture());
