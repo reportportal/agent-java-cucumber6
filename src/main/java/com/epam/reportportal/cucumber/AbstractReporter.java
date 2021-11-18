@@ -263,14 +263,13 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		URI uri = testCase.getUri();
 		int line = testCase.getLocation().getLine();
 		Optional<FeatureContext> feature = ofNullable(featureContextMap.get(uri));
-		if(feature.isPresent()) {
+		if (feature.isPresent()) {
 			FeatureContext f = feature.get();
 			Optional<ScenarioContext> scenario = f.getScenario(line);
-			if(scenario.isPresent()) {
+			if (scenario.isPresent()) {
 				return context.executeWithContext(f, scenario.get());
 			} else {
-				LOGGER.warn(
-						"Unable to locate corresponding Feature or Scenario context for URI: " + uri.toString() + "; line: " + line);
+				LOGGER.warn("Unable to locate corresponding Feature or Scenario context for URI: " + uri.toString() + "; line: " + line);
 			}
 		} else {
 			LOGGER.warn("Unable to locate corresponding Feature for URI: " + uri.toString());
@@ -351,7 +350,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 */
 	protected void beforeStep(@Nonnull TestCase testCase, @Nonnull TestStep testStep) {
 		execute(testCase, (f, s) -> {
-			if(testStep instanceof PickleStepTestStep) {
+			if (testStep instanceof PickleStepTestStep) {
 				PickleStepTestStep step = (PickleStepTestStep) testStep;
 				StartTestItemRQ rq = buildStartStepRequest(testStep, s.getStepPrefix(), step.getStep().getKeyword());
 				Maybe<String> stepId = startStep(s.getId(), rq);
@@ -439,8 +438,8 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 			finishTestItem(s.getHookId(), mapItemStatus(result.getStatus()));
 			s.setHookId(Maybe.empty());
 			if (step.getHookType() == HookType.AFTER_STEP) {
-				if(step instanceof PickleStepTestStep) {
-					removeFromTree(s, ((PickleStepTestStep)step).getStep().getText());
+				if (step instanceof PickleStepTestStep) {
+					removeFromTree(s, ((PickleStepTestStep) step).getStep().getText());
 				}
 			}
 			return null;
@@ -579,30 +578,28 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 */
 	protected void beforeScenario(@Nonnull Feature feature, @Nonnull TestCase scenario) {
 		String scenarioName = Utils.buildName(scenario.getKeyword(), AbstractReporter.COLON_INFIX, scenario.getName());
-		ofNullable(featureContextMap.get(feature.getUri())).ifPresent(f -> {
-			Optional<ScenarioContext> scenarioContext = f.getScenario(scenario.getLocation().getLine());
-			scenarioContext.ifPresent(s -> {
-				Optional<RuleContext> rule = s.getRule();
-				Optional<RuleContext> currentRule = f.getCurrentRule();
-				if (!currentRule.equals(rule)) {
-					if (!currentRule.isPresent()) {
-						rule.ifPresent(r -> r.setId(startRule(f.getId(),
-								buildStartRuleRequest(r.getRule(), getCodeRef(feature.getUri(), r.getLine()))
-						)));
-					} else {
-						finishTestItem(currentRule.get().getId());
-						rule.ifPresent(r -> {
-							r.setId(startRule(f.getId(), buildStartRuleRequest(r.getRule(), getCodeRef(feature.getUri(), r.getLine()))));
-							f.setCurrentRule(r);
-						});
-					}
+		execute(scenario, (f, s) -> {
+			Optional<RuleContext> rule = s.getRule();
+			Optional<RuleContext> currentRule = f.getCurrentRule();
+			if (!currentRule.equals(rule)) {
+				if (!currentRule.isPresent()) {
+					rule.ifPresent(r -> r.setId(startRule(f.getId(),
+							buildStartRuleRequest(r.getRule(), getCodeRef(feature.getUri(), r.getLine()))
+					)));
+				} else {
+					finishTestItem(currentRule.get().getId());
+					rule.ifPresent(r -> {
+						r.setId(startRule(f.getId(), buildStartRuleRequest(r.getRule(), getCodeRef(feature.getUri(), r.getLine()))));
+						f.setCurrentRule(r);
+					});
 				}
-				Maybe<String> rootId = rule.map(RuleContext::getId).orElseGet(f::getId);
-				s.setId(startScenario(rootId, buildStartScenarioRequest(scenario, scenarioName, s.getUri(), s.getLine())));
-				if (launch.get().getParameters().isCallbackReportingEnabled()) {
-					addToTree(feature, scenario, s.getId());
-				}
-			});
+			}
+			Maybe<String> rootId = rule.map(RuleContext::getId).orElseGet(f::getId);
+			s.setId(startScenario(rootId, buildStartScenarioRequest(scenario, scenarioName, s.getUri(), s.getLine())));
+			if (launch.get().getParameters().isCallbackReportingEnabled()) {
+				addToTree(feature, scenario, s.getId());
+			}
+			return null;
 		});
 	}
 
@@ -645,7 +642,9 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		Optional<FeatureContext> featureContext = ofNullable(featureContextMap.get(uri));
 		Boolean result = featureContext.map(f -> {
 			StartTestItemRQ featureRq = buildStartFeatureRequest(f.getFeature(), uri);
-			f.setId(startFeature(featureRq));
+			if (f.getId().equals(Maybe.empty())) {
+				f.setId(startFeature(featureRq));
+			}
 			Optional<ScenarioContext> scenarioContext = f.getScenario(testCase.getLocation().getLine());
 			return scenarioContext.map(s -> {
 				s.setTestCase(testCase);
