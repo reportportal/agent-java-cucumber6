@@ -23,12 +23,12 @@ import org.slf4j.LoggerFactory;
 public class AmbiguousSteps {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AmbiguousSteps.class);
 
-	@Given("I have an ambiguous step {string}")
-	public void i_have_an_ambiguous_step(String param) {
+	@Given("I have an ambiguous step {int}")
+	public void i_have_an_ambiguous_step(int param) {
 		LOGGER.info("Inside 'I have an ambiguous step', parameter: " + param);
 	}
 
-	@Given("I have an ambiguous step two")
+	@Given("I have an ambiguous step 2")
 	public void i_have_an_ambiguous_step_two() {
 		LOGGER.info("Inside 'I have an ambiguous step two'");
 	}
