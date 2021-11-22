@@ -212,6 +212,31 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	}
 
 	/**
+	 * Transform tags from Cucumber to RP format
+	 *
+	 * @param tags - Cucumber tags
+	 * @return set of tags
+	 */
+	@Nonnull
+	protected Set<ItemAttributesRQ> extractAttributes(@Nonnull Collection<?> tags) {
+		return tags.stream().map(Object::toString).map(tagValue -> new ItemAttributesRQ(null, tagValue)).collect(Collectors.toSet());
+	}
+
+	@FunctionalInterface
+	private interface FeatureContextAware {
+		void executeWithContext(@Nonnull FeatureContext featureContext);
+	}
+
+	private void execute(@Nonnull URI uri, @Nonnull FeatureContextAware context) {
+		Optional<FeatureContext> feature = ofNullable(featureContextMap.get(uri));
+		if (feature.isPresent()) {
+			context.executeWithContext(feature.get());
+		} else {
+			LOGGER.warn("Unable to locate corresponding Feature for URI: " + uri);
+		}
+	}
+
+	/**
 	 * Extension point to customize scenario creation event/request
 	 *
 	 * @param testCase Cucumber's TestCase object
@@ -227,7 +252,9 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		rq.setDescription(getDescription(testCase, uri));
 		String codeRef = getCodeRef(uri, line);
 		rq.setCodeRef(codeRef);
-		rq.setAttributes(extractAttributes(testCase.getTags()));
+		Set<String> tags = new HashSet<>(testCase.getTags());
+		execute(uri, f -> tags.removeAll(f.getTags()));
+		rq.setAttributes(extractAttributes(tags));
 		rq.setStartTime(Calendar.getInstance().getTime());
 		String type = getScenarioTestItemType();
 		rq.setType(type);
@@ -255,27 +282,21 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	}
 
 	@FunctionalInterface
-	private interface ContextAwareResult<R> {
-		R executeWithContext(@Nonnull FeatureContext featureContext, @Nonnull ScenarioContext scenarioContext);
+	private interface ScenarioContextAware {
+		void executeWithContext(@Nonnull FeatureContext featureContext, @Nonnull ScenarioContext scenarioContext);
 	}
 
-	@Nullable
-	private <T> T execute(@Nonnull TestCase testCase, @Nonnull ContextAwareResult<T> context) {
+	private void execute(@Nonnull TestCase testCase, @Nonnull ScenarioContextAware context) {
 		URI uri = testCase.getUri();
 		int line = testCase.getLocation().getLine();
-		Optional<FeatureContext> feature = ofNullable(featureContextMap.get(uri));
-		if (feature.isPresent()) {
-			FeatureContext f = feature.get();
+		execute(uri, f -> {
 			Optional<ScenarioContext> scenario = f.getScenario(line);
 			if (scenario.isPresent()) {
-				return context.executeWithContext(f, scenario.get());
+				context.executeWithContext(f, scenario.get());
 			} else {
-				LOGGER.warn("Unable to locate corresponding Feature or Scenario context for URI: " + uri.toString() + "; line: " + line);
+				LOGGER.warn("Unable to locate corresponding Feature or Scenario context for URI: " + uri + "; line: " + line);
 			}
-		} else {
-			LOGGER.warn("Unable to locate corresponding Feature for URI: " + uri.toString());
-		}
-		return null;
+		});
 	}
 
 	/**
@@ -291,7 +312,6 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 			Date endTime = finishTestItem(s.getId(), mapItemStatus(event.getResult().getStatus()));
 			featureEndTime.put(featureUri, endTime);
 			removeFromTree(f, s);
-			return null;
 		});
 	}
 
@@ -362,7 +382,6 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 					addToTree(s, stepText, stepId);
 				}
 			}
-			return null;
 		});
 	}
 
@@ -379,7 +398,6 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 			reportResult(result, null);
 			finishTestItem(s.getStepId(), mapItemStatus(result.getStatus()));
 			s.setStepId(Maybe.empty());
-			return null;
 		});
 	}
 
@@ -423,7 +441,6 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		execute(testCase, (f, s) -> {
 			StartTestItemRQ rq = buildStartHookRequest(testCase, testStep);
 			s.setHookId(startHook(s.getId(), rq));
-			return null;
 		});
 	}
 
@@ -444,7 +461,6 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 					removeFromTree(s, ((PickleStepTestStep) step).getStep().getText());
 				}
 			}
-			return null;
 		});
 	}
 
@@ -601,7 +617,6 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 			if (launch.get().getParameters().isCallbackReportingEnabled()) {
 				addToTree(feature, scenario, s.getId());
 			}
-			return null;
 		});
 	}
 
@@ -620,7 +635,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		startFeatureRq.setDescription(getDescription(feature, uri));
 		startFeatureRq.setCodeRef(getCodeRef(uri, 0));
 		startFeatureRq.setName(buildName(featureKeyword, AbstractReporter.COLON_INFIX, featureName));
-		startFeatureRq.setAttributes(extractAttributes(feature.getPickles().get(0).getTags()));
+		execute(feature.getUri(), f -> startFeatureRq.setAttributes(extractAttributes(f.getTags())));
 		startFeatureRq.setStartTime(Calendar.getInstance().getTime());
 		startFeatureRq.setType(getFeatureTestItemType());
 		return startFeatureRq;
@@ -638,26 +653,24 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		return root.map(r -> launch.get().startTestItem(r, startFeatureRq)).orElseGet(() -> launch.get().startTestItem(startFeatureRq));
 	}
 
+	/**
+	 * Starts a Cucumber Test Case start, also starts corresponding Feature if is not started already.
+	 *
+	 * @param event Cucumber's Test Case started event object
+	 */
 	protected void handleStartOfTestCase(@Nonnull TestCaseStarted event) {
 		TestCase testCase = event.getTestCase();
 		URI uri = testCase.getUri();
-		Optional<FeatureContext> featureContext = ofNullable(featureContextMap.get(uri));
-		Boolean result = featureContext.map(f -> {
-			StartTestItemRQ featureRq = buildStartFeatureRequest(f.getFeature(), uri);
+		execute(uri, f -> {
 			if (f.getId().equals(Maybe.empty())) {
+				StartTestItemRQ featureRq = buildStartFeatureRequest(f.getFeature(), uri);
 				f.setId(startFeature(featureRq));
 			}
-			Optional<ScenarioContext> scenarioContext = f.getScenario(testCase.getLocation().getLine());
-			return scenarioContext.map(s -> {
-				s.setTestCase(testCase);
-				beforeScenario(f.getFeature(), testCase);
-				return true;
-			}).orElse(false);
-		}).orElse(false);
-		if (!result) {
-			LOGGER.warn("Unable to locate corresponding Feature or Scenario context for URI: " + uri.toString() + "; line: "
-					+ testCase.getLocation().getLine());
-		}
+		});
+		execute(testCase, (f, s) -> {
+			s.setTestCase(testCase);
+			beforeScenario(f.getFeature(), testCase);
+		});
 	}
 
 	protected void handleSourceEvents(TestSourceParsed parseEvent) {
@@ -917,27 +930,6 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 			marg.append(DOCSTRING_DECORATOR).append(docString).append(DOCSTRING_DECORATOR);
 		}
 		return marg.toString();
-	}
-
-	/**
-	 * Transform tags from Cucumber to RP format
-	 *
-	 * @param tags - Cucumber tags
-	 * @return set of tags
-	 */
-	@Nonnull
-	protected Set<ItemAttributesRQ> extractAttributes(@Nonnull List<?> tags) {
-		return tags.stream().map(s -> {
-			String tagValue = null;
-			// TODO: fix it
-
-			//			if (s instanceof Messages.GherkinDocument.Feature.Tag) {
-			//				tagValue = ((Messages.GherkinDocument.Feature.Tag) s).getName();
-			//			} else {
-			//				tagValue = s.toString();
-			//			}
-			return new ItemAttributesRQ(null, tagValue);
-		}).collect(Collectors.toSet());
 	}
 
 	/**

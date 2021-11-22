@@ -24,6 +24,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.net.URI;
 import java.util.Optional;
+import java.util.Set;
 
 import static java.util.Optional.ofNullable;
 
@@ -49,7 +50,6 @@ public class ScenarioContext {
 		scenario = scenarioNode;
 		scenarioOutline = null;
 		line = scenario.getLocation().getLine();
-
 	}
 
 	public ScenarioContext(@Nonnull URI scenarioFilePath, @Nonnull FeatureContext featureContext, @Nullable RuleContext ruleNode,

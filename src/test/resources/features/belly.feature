@@ -1,3 +1,4 @@
+@smoke @test
 Feature: Belly
 
   @ok

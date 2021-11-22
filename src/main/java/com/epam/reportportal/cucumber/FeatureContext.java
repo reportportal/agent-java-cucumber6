@@ -32,11 +32,12 @@ public class FeatureContext {
 	private final Feature feature;
 	private final Map<Integer, RuleContext> rules = new HashMap<>();
 	private final Map<Integer, ScenarioContext> scenarios = new HashMap<>();
+	private final Set<String> tags;
 
 	private Maybe<String> id = Maybe.empty();
 	private RuleContext currentRule;
 
-	private void handleSourceEvent(@Nonnull Deque<RuleContext> ruleQueue, @Nonnull URI uri, @Nonnull Node node) {
+	private void handleNode(@Nonnull Deque<RuleContext> ruleQueue, @Nonnull URI uri, @Nonnull Node node) {
 		if (node instanceof Node.Rule) {
 			Node.Rule rule = (Node.Rule) node;
 			RuleContext ruleContext = new RuleContext(uri, this, (Node.Rule) node);
@@ -55,15 +56,16 @@ public class FeatureContext {
 		}
 	}
 
-	private <T extends Node> void handleSourceEvents(URI uri, Collection<T> nodes) {
+	private <T extends Node> void handleNodes(@Nonnull URI uri, @Nonnull Collection<T> nodes) {
 		Deque<RuleContext> ruleQueue = new LinkedList<>();
-		nodes.forEach(n -> handleSourceEvent(ruleQueue, uri, n));
+		nodes.forEach(n -> handleNode(ruleQueue, uri, n));
 	}
 
 	public FeatureContext(@Nonnull URI featureUri, @Nonnull Feature featureNode) {
 		uri = featureUri;
 		feature = featureNode;
-		handleSourceEvents(featureUri, featureNode.elements());
+		handleNodes(featureUri, featureNode.elements());
+		tags = Utils.getTags(featureNode);
 	}
 
 	@Nonnull
@@ -74,6 +76,11 @@ public class FeatureContext {
 	@Nonnull
 	public URI getUri(){
 		return uri;
+	}
+
+	@Nonnull
+	public Set<String> getTags() {
+		return tags;
 	}
 
 	@Nonnull
