@@ -663,6 +663,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		URI uri = testCase.getUri();
 		execute(uri, f -> {
 			if (f.getId().equals(Maybe.empty())) {
+				getRootItemId(); // trigger root item creation
 				StartTestItemRQ featureRq = buildStartFeatureRequest(f.getFeature(), uri);
 				f.setId(startFeature(featureRq));
 			}
