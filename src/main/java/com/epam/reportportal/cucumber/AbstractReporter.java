@@ -82,6 +82,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	private static final String GET_LOCATION_METHOD_NAME = "getLocation";
 	private static final String COLON_INFIX = ": ";
 	private static final String SKIPPED_ISSUE_KEY = "skippedIssue";
+	public static final String BACKGROUND_PREFIX = "BACKGROUND: ";
 
 	protected static final URI WORKING_DIRECTORY = new File(System.getProperty("user.dir")).toURI();
 	protected static final String METHOD_OPENING_BRACKET = "(";
@@ -352,7 +353,8 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		execute(testCase, (f, s) -> {
 			if (testStep instanceof PickleStepTestStep) {
 				PickleStepTestStep step = (PickleStepTestStep) testStep;
-				StartTestItemRQ rq = buildStartStepRequest(testStep, s.getStepPrefix(), step.getStep().getKeyword());
+				String stepPrefix = step.getStep().getLocation().getLine() < s.getLine() ? BACKGROUND_PREFIX : null;
+				StartTestItemRQ rq = buildStartStepRequest(testStep, stepPrefix, step.getStep().getKeyword());
 				Maybe<String> stepId = startStep(s.getId(), rq);
 				s.setStepId(stepId);
 				String stepText = step.getStep().getText();
@@ -757,11 +759,6 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		if (testStep instanceof HookTestStep) {
 			beforeHooks(testCase, (HookTestStep) testStep);
 		} else {
-			// TODO: test Background
-
-			//			if (getCurrentScenarioContext().withBackground()) {
-			//				getCurrentScenarioContext().nextBackgroundStep();
-			//			}
 			beforeStep(testCase, testStep);
 		}
 	}

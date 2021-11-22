@@ -101,11 +101,6 @@ public class ScenarioContext {
 		return hookId;
 	}
 
-	public String getStepPrefix() {
-		// TODO: finish that.
-		return null;
-	}
-
 	public void setStepId(@Nonnull Maybe<String> currentStepId) {
 		stepId = currentStepId;
 	}
