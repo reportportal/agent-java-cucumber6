@@ -26,14 +26,12 @@ public class RuleContext {
 
 	private final int line;
 	private final URI uri;
-	private final FeatureContext feature;
 	private final Node.Rule rule;
 
 	private Maybe<String> id = Maybe.empty();
 
-	public RuleContext(@Nonnull URI ruleFilePath, @Nonnull FeatureContext featureContext, @Nonnull Node.Rule ruleNode) {
+	public RuleContext(@Nonnull URI ruleFilePath, @Nonnull Node.Rule ruleNode) {
 		uri = ruleFilePath;
-		feature = featureContext;
 		rule = ruleNode;
 		line = ruleNode.getLocation().getLine();
 	}
@@ -54,5 +52,10 @@ public class RuleContext {
 	@Nonnull
 	public Node.Rule getRule() {
 		return rule;
+	}
+
+	@SuppressWarnings("unused")
+	public URI getUri() {
+		return uri;
 	}
 }

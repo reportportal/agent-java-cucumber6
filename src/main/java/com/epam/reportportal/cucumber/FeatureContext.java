@@ -39,7 +39,7 @@ public class FeatureContext {
 	private void handleNode(@Nonnull Deque<RuleContext> ruleQueue, @Nonnull URI uri, @Nonnull Node node) {
 		if (node instanceof Node.Rule) {
 			Node.Rule rule = (Node.Rule) node;
-			RuleContext ruleContext = new RuleContext(uri, this, (Node.Rule) node);
+			RuleContext ruleContext = new RuleContext(uri, (Node.Rule) node);
 			ruleQueue.add(ruleContext);
 			rule.elements().forEach(n -> handleNode(ruleQueue, uri, n));
 		}
