@@ -58,20 +58,6 @@ public class AttributeReportingTest {
 
 	}
 
-	@CucumberOptions(features = "src/test/resources/features/ExamplesTags.feature", glue = {
-			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
-			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
-	public static class ExamplesStepReporter extends AbstractTestNGCucumberTests {
-
-	}
-
-	@CucumberOptions(features = "src/test/resources/features/ExamplesTags.feature", glue = {
-			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
-			"com.epam.reportportal.cucumber.integration.TestScenarioReporter" })
-	public static class ExamplesScenarioReporter extends AbstractTestNGCucumberTests {
-
-	}
-
 	private final String launchId = CommonUtils.namedId("launch_");
 	private final String suiteId = CommonUtils.namedId("suite_");
 	private final String testId = CommonUtils.namedId("test_");
