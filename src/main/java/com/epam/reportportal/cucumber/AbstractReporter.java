@@ -601,9 +601,10 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 			Optional<RuleContext> currentRule = f.getCurrentRule();
 			if (!currentRule.equals(rule)) {
 				if (!currentRule.isPresent()) {
-					rule.ifPresent(r -> r.setId(startRule(f.getId(),
-							buildStartRuleRequest(r.getRule(), getCodeRef(feature.getUri(), r.getLine()))
-					)));
+					rule.ifPresent(r -> {
+						r.setId(startRule(f.getId(), buildStartRuleRequest(r.getRule(), getCodeRef(feature.getUri(), r.getLine()))));
+						f.setCurrentRule(r);
+					});
 				} else {
 					finishTestItem(currentRule.get().getId());
 					rule.ifPresent(r -> {

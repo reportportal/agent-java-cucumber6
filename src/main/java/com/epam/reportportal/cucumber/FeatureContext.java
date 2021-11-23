@@ -43,6 +43,7 @@ public class FeatureContext {
 			RuleContext ruleContext = new RuleContext(uri, this, (Node.Rule) node);
 			ruleQueue.add(ruleContext);
 			rules.put(rule.getLocation().getLine(), ruleContext);
+			rule.elements().forEach(n->handleNode(ruleQueue, uri, n));
 		}
 		if (node instanceof Node.Scenario) {
 			Node.Scenario scenario = (Node.Scenario) node;
