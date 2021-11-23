@@ -403,6 +403,38 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		});
 	}
 
+
+	/**
+	 * Returns hook type and name as a <code>Pair</code>
+	 *
+	 * @param hookType Cucumber's hoo type
+	 * @return a pair of type and name
+	 */
+	@Nonnull
+	protected Pair<String, String> getHookTypeAndName(@Nonnull HookType hookType) {
+		String name = null;
+		String type = null;
+		switch (hookType) {
+			case BEFORE:
+				name = "Before hooks";
+				type = "BEFORE_TEST";
+				break;
+			case AFTER:
+				name = "After hooks";
+				type = "AFTER_TEST";
+				break;
+			case AFTER_STEP:
+				name = "After step";
+				type = "AFTER_METHOD";
+				break;
+			case BEFORE_STEP:
+				name = "Before step";
+				type = "BEFORE_METHOD";
+				break;
+		}
+		return Pair.of(type, name);
+	}
+
 	/**
 	 * Extension point to customize test creation event/request
 	 *
@@ -1115,36 +1147,5 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	@SuppressWarnings("unused")
 	protected String getDescription(@Nonnull TestCase testCase, @Nonnull URI uri) {
 		return uri.toString();
-	}
-
-	/**
-	 * Returns hook type and name as a <code>Pair</code>
-	 *
-	 * @param hookType Cucumber's hoo type
-	 * @return a pair of type and name
-	 */
-	@Nonnull
-	protected Pair<String, String> getHookTypeAndName(@Nonnull HookType hookType) {
-		String name = null;
-		String type = null;
-		switch (hookType) {
-			case BEFORE:
-				name = "Before hooks";
-				type = "BEFORE_TEST";
-				break;
-			case AFTER:
-				name = "After hooks";
-				type = "AFTER_TEST";
-				break;
-			case AFTER_STEP:
-				name = "After step";
-				type = "AFTER_METHOD";
-				break;
-			case BEFORE_STEP:
-				name = "Before step";
-				type = "BEFORE_METHOD";
-				break;
-		}
-		return Pair.of(type, name);
 	}
 }

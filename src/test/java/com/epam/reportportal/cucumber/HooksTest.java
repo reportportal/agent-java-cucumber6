@@ -43,16 +43,30 @@ import static org.mockito.Mockito.*;
 public class HooksTest {
 
 	@CucumberOptions(features = "src/test/resources/features/DummyScenario.feature", glue = {
-			"com.epam.reportportal.cucumber.integration.hooks" }, plugin = { "pretty",
+			"com.epam.reportportal.cucumber.integration.hooks.step" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
-	public static class MyStepReporter extends AbstractTestNGCucumberTests {
+	public static class StepHooksReporter extends AbstractTestNGCucumberTests {
+
+	}
+
+	@CucumberOptions(features = "src/test/resources/features/DummyScenario.feature", glue = {
+			"com.epam.reportportal.cucumber.integration.hooks.scenario" }, plugin = { "pretty",
+			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
+	public static class ScenarioHooksReporter extends AbstractTestNGCucumberTests {
+
+	}
+
+	@CucumberOptions(features = "src/test/resources/features/DummyScenario.feature", glue = {
+			"com.epam.reportportal.cucumber.integration.hooks.all" }, plugin = { "pretty",
+			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
+	public static class AllHooksReporter extends AbstractTestNGCucumberTests {
 
 	}
 
 	@CucumberOptions(features = "src/test/resources/features/DummyScenario.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
-	public static class MyStepReporter2 extends AbstractTestNGCucumberTests {
+	public static class NoHooksReporter extends AbstractTestNGCucumberTests {
 
 	}
 
@@ -81,19 +95,43 @@ public class HooksTest {
 
 	@Test
 	@SuppressWarnings("unchecked")
-	public void verify_before_after_reported_in_steps() {
-		TestUtils.runTests(MyStepReporter.class);
+	public void verify_before_after_step_reported_in_steps() {
+		TestUtils.runTests(StepHooksReporter.class);
 
 		verify(client, times(1)).startTestItem(any());
 		verify(client, times(1)).startTestItem(same(suiteId), any());
-		verify(client, times(8)).startTestItem(same(testId), any());
-		verify(client, times(14)).log(any(List.class));
+		verify(client, times(6)).startTestItem(same(testId), any());
+		verify(client, times(10)).log(any(List.class));
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void verify_before_after_scenario_reported_in_steps() {
+		TestUtils.runTests(ScenarioHooksReporter.class);
+
+		verify(client, times(1)).startTestItem(any());
+		verify(client, times(1)).startTestItem(same(suiteId), any());
+		verify(client, times(4)).startTestItem(same(testId), any());
+		verify(client, times(6)).log(any(List.class));
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void verify_before_after_all_reported_in_steps() {
+		TestUtils.runTests(AllHooksReporter.class);
+
+		verify(client, times(1)).startTestItem(any());
+		verify(client, times(1)).startTestItem(same(suiteId), any());
+
+		// @BeforeAll and @AfterAll hooks does not emit any events, see: https://github.com/cucumber/cucumber-jvm/issues/2422
+		verify(client, times(2)).startTestItem(same(testId), any());
+		verify(client, times(3)).log(any(List.class));
 	}
 
 	@Test
 	@SuppressWarnings("unchecked")
 	public void verify_before_after_not_reported_in_steps() {
-		TestUtils.runTests(MyStepReporter2.class);
+		TestUtils.runTests(NoHooksReporter.class);
 
 		verify(client, times(1)).startTestItem(any());
 		verify(client, times(1)).startTestItem(same(suiteId), any());
