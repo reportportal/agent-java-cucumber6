@@ -66,10 +66,6 @@ import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
 /**
  * Abstract Cucumber 5.x formatter for Report Portal
  *
- * @author Sergey Gvozdyukevich
- * @author Andrei Varabyeu
- * @author Serhii Zharskyi
- * @author Vitaliy Tsvihun
  * @author Vadzim Hushchanskou
  */
 public abstract class AbstractReporter implements ConcurrentEventListener {
