@@ -41,6 +41,7 @@ public class CallbackReportingSteps {
 		ItemTreeUtils.retrieveLeaf(scenario.getUri(), scenario.getLine(), STEP_TEXT, AbstractReporter.getCurrent().getItemTree())
 				.ifPresent(itemLeaf -> {
 					if (scenario.getName().contains("failure")) {
+						itemLeaf.getItemId().blockingGet(); // trigger item creation to avoid async issues
 						sendFinishRequest(itemLeaf, "FAILED", "secondTest");
 						attachLog(itemLeaf);
 					} else {
