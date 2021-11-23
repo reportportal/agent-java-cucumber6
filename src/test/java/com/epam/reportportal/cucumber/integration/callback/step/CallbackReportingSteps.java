@@ -39,14 +39,16 @@ public class CallbackReportingSteps {
 
 	@AfterStep
 	public void after(Scenario scenario) {
-		ItemTreeUtils.retrieveLeaf(scenario.getUri(), scenario.getLine(), STEP_TEXT, AbstractReporter.ITEM_TREE).ifPresent(itemLeaf -> {
-			if (scenario.getName().contains("failure")) {
-				sendFinishRequest(itemLeaf, "FAILED", "secondTest");
-				attachLog(itemLeaf);
-			} else {
-				sendFinishRequest(itemLeaf, "PASSED", "firstTest");
-			}
-		});
+		ItemTreeUtils.retrieveLeaf(scenario.getUri(), scenario.getLine(), STEP_TEXT, AbstractReporter.getCurrent().getItemTree())
+				.ifPresent(itemLeaf -> {
+					if (scenario.getName().contains("failure")) {
+						itemLeaf.getItemId().blockingGet(); // trigger item creation to avoid async issues
+						sendFinishRequest(itemLeaf, "FAILED", "secondTest");
+						attachLog(itemLeaf);
+					} else {
+						sendFinishRequest(itemLeaf, "PASSED", "firstTest");
+					}
+				});
 	}
 
 	private void sendFinishRequest(TestItemTree.TestItemLeaf testResultLeaf, String status, String description) {
@@ -54,23 +56,22 @@ public class CallbackReportingSteps {
 		finishTestItemRQ.setDescription(description);
 		finishTestItemRQ.setStatus(status);
 		finishTestItemRQ.setEndTime(Calendar.getInstance().getTime());
-		ItemTreeReporter.finishItem(AbstractReporter.getReportPortal().getClient(),
+		ItemTreeReporter.finishItem(
+				AbstractReporter.getCurrent().getReportPortal().getClient(),
 				finishTestItemRQ,
-				AbstractReporter.ITEM_TREE.getLaunchId(),
+				AbstractReporter.getCurrent().getItemTree().getLaunchId(),
 				testResultLeaf
-		)
-				.cache()
-				.blockingGet();
+		).cache().blockingGet();
 	}
 
 	private void attachLog(TestItemTree.TestItemLeaf testItemLeaf) {
-		ItemTreeReporter.sendLog(AbstractReporter.getReportPortal().getClient(),
+		ItemTreeReporter.sendLog(
+				AbstractReporter.getCurrent().getReportPortal().getClient(),
 				"ERROR",
 				"Error message",
 				Calendar.getInstance().getTime(),
-				AbstractReporter.ITEM_TREE.getLaunchId(),
+				AbstractReporter.getCurrent().getItemTree().getLaunchId(),
 				testItemLeaf
 		);
 	}
-
 }

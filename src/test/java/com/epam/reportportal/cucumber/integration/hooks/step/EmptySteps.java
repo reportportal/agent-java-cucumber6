@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 EPAM Systems
+ * Copyright 2021 EPAM Systems
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
-package com.epam.reportportal.cucumber.integration.hooks;
+package com.epam.reportportal.cucumber.integration.hooks.step;
 
-import io.cucumber.java.After;
 import io.cucumber.java.AfterStep;
-import io.cucumber.java.Before;
 import io.cucumber.java.BeforeStep;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -27,11 +25,6 @@ import org.slf4j.LoggerFactory;
 
 public class EmptySteps {
 	private static final Logger LOGGER = LoggerFactory.getLogger(EmptySteps.class);
-
-	@Before
-	public void my_before_hook() {
-		LOGGER.info("Inside 'my_before_hook'");
-	}
 
 	@BeforeStep
 	public void my_before_step_hook() {
@@ -51,10 +44,5 @@ public class EmptySteps {
 	@Then("I have another empty step")
 	public void i_have_another_empty_step() {
 		LOGGER.info("Inside 'I have another empty step'");
-	}
-
-	@After
-	public void my_after_hook() {
-		LOGGER.info("Inside 'my_after_hook'");
 	}
 }

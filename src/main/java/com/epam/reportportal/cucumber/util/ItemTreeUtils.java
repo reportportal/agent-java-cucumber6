@@ -17,6 +17,7 @@
 package com.epam.reportportal.cucumber.util;
 
 import com.epam.reportportal.service.tree.TestItemTree;
+import io.cucumber.core.gherkin.Feature;
 
 import java.net.URI;
 import java.util.Optional;
@@ -34,6 +35,10 @@ public class ItemTreeUtils {
 
 	public static TestItemTree.ItemTreeKey createKey(URI featureUri) {
 		return TestItemTree.ItemTreeKey.of(featureUri.toASCIIString());
+	}
+
+	public static TestItemTree.ItemTreeKey createKey(Feature feature) {
+		return createKey(feature.getUri());
 	}
 
 	public static TestItemTree.ItemTreeKey createKey(int lineNumber) {

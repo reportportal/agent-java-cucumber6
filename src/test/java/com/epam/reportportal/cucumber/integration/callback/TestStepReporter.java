@@ -28,6 +28,6 @@ public class TestStepReporter extends StepReporter {
 	}
 
 	public static void addReportPortal(ReportPortal rp) {
-		setReportPortal(rp);
+		RP.set(rp);
 	}
 }

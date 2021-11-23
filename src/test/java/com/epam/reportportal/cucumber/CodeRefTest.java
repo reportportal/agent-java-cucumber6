@@ -91,7 +91,7 @@ public class CodeRefTest {
 
 	private static final String FEATURE_CODE_REFERENCES = "src/test/resources/features/belly.feature:0";
 
-	private static final String SCENARIO_CODE_REFERENCES = "src/test/resources/features/belly.feature:4";
+	private static final String SCENARIO_CODE_REFERENCES = "src/test/resources/features/belly.feature:5";
 
 	@Test
 	public void verify_code_reference_scenario_reporter() {

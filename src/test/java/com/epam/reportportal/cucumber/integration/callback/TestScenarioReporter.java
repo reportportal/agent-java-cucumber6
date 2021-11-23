@@ -28,6 +28,6 @@ public class TestScenarioReporter extends ScenarioReporter {
 	}
 
 	public static void addReportPortal(ReportPortal rp) {
-		setReportPortal(rp);
+		RP.set(rp);
 	}
 }

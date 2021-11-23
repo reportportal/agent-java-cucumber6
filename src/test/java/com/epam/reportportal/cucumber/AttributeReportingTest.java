@@ -101,17 +101,19 @@ public class AttributeReportingTest {
 		verifyAttributes(stepAttributes, new HashSet<>(Arrays.asList(Pair.of(null, "v1"), Pair.of(null, "v2"))));
 	}
 
+	private static final List<Pair<String, String>> FEATURE_ATTRIBUTES = Arrays.asList(Pair.of(null, "@smoke"), Pair.of(null, "@test"));
+
 	@Test
 	public void verify_step_reporter_attributes() {
 		TestUtils.runTests(SimpleTestStepReporter.class);
 
 		ArgumentCaptor<StartTestItemRQ> suiteCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(client, times(1)).startTestItem(suiteCaptor.capture());
+		verify(client).startTestItem(suiteCaptor.capture());
 
-		assertThat(suiteCaptor.getValue().getAttributes(), anyOf(emptyIterable(), nullValue()));
+		verifyAttributes(suiteCaptor.getValue().getAttributes(), FEATURE_ATTRIBUTES);
 
 		ArgumentCaptor<StartTestItemRQ> testCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(client, times(1)).startTestItem(same(suiteId), testCaptor.capture());
+		verify(client).startTestItem(same(suiteId), testCaptor.capture());
 		verifyAttributes(testCaptor.getValue().getAttributes(), Collections.singleton(Pair.of(null, "@ok")));
 
 		ArgumentCaptor<StartTestItemRQ> stepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
@@ -126,15 +128,15 @@ public class AttributeReportingTest {
 		TestUtils.runTests(SimpleTestScenarioReporter.class);
 
 		ArgumentCaptor<StartTestItemRQ> mainSuiteCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(client, times(1)).startTestItem(mainSuiteCaptor.capture());
+		verify(client).startTestItem(mainSuiteCaptor.capture());
 		assertThat(mainSuiteCaptor.getValue().getAttributes(), anyOf(emptyIterable(), nullValue()));
 
 		ArgumentCaptor<StartTestItemRQ> suiteCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(client, times(1)).startTestItem(same(suiteId), suiteCaptor.capture());
-		assertThat(mainSuiteCaptor.getValue().getAttributes(), anyOf(emptyIterable(), nullValue()));
+		verify(client).startTestItem(same(suiteId), suiteCaptor.capture());
+		verifyAttributes(suiteCaptor.getValue().getAttributes(), FEATURE_ATTRIBUTES);
 
 		ArgumentCaptor<StartTestItemRQ> testCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(client, times(1)).startTestItem(same(testId), testCaptor.capture());
+		verify(client).startTestItem(same(testId), testCaptor.capture());
 		verifyAttributes(testCaptor.getValue().getAttributes(), Collections.singleton(Pair.of(null, "@ok")));
 
 		ArgumentCaptor<StartTestItemRQ> stepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);

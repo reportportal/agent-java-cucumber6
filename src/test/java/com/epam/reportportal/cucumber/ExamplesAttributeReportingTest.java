@@ -16,7 +16,6 @@
 
 package com.epam.reportportal.cucumber;
 
-import com.epam.reportportal.cucumber.integration.TestScenarioReporter;
 import com.epam.reportportal.cucumber.integration.TestStepReporter;
 import com.epam.reportportal.cucumber.integration.util.TestUtils;
 import com.epam.reportportal.listeners.ListenerParameters;
@@ -24,6 +23,7 @@ import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import io.cucumber.testng.AbstractTestNGCucumberTests;
 import io.cucumber.testng.CucumberOptions;
 import org.apache.commons.lang3.tuple.Pair;
@@ -31,36 +31,25 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
 
 /**
  * @author <a href="mailto:ihar_kahadouski@epam.com">Ihar Kahadouski</a>
  */
-public class ScenarioOutlineStepReporterTest {
+public class ExamplesAttributeReportingTest {
 
-	@CucumberOptions(features = "src/test/resources/features/BasicScenarioOutlineParameters.feature", glue = {
+	@CucumberOptions(features = "src/test/resources/features/ExamplesTags.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
-	public static class RunOutlineParametersTestStepReporter extends AbstractTestNGCucumberTests {
-
-	}
-
-	@CucumberOptions(features = "src/test/resources/features/DynamicScenarioOutlineNames.feature", glue = {
-			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
-			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
-	public static class RunDynamicScenarioOutlineTitlesTestStepReporter extends AbstractTestNGCucumberTests {
+	public static class ExamplesStepReporter extends AbstractTestNGCucumberTests {
 
 	}
 
@@ -79,47 +68,31 @@ public class ScenarioOutlineStepReporterTest {
 	@BeforeEach
 	public void initLaunch() {
 		TestUtils.mockLaunch(client, launchId, suiteId, tests);
-		TestScenarioReporter.RP.set(reportPortal);
 		TestStepReporter.RP.set(reportPortal);
 	}
 
-	public static final Pattern[] STEP_PATTERNS = new Pattern[] { Pattern.compile("Given It is test with parameters"),
-			Pattern.compile("When I have parameter \"\\w+\""), Pattern.compile("Then I emit number \\d+ on level info") };
-
 	// Do not add iteration indexes / numbers, since it breaks re-runs
 	@Test
-	public void verify_scenario_outline_names() {
-		TestUtils.runTests(RunOutlineParametersTestStepReporter.class);
+	public void verify_examples_attributes() {
+		TestUtils.runTests(ExamplesStepReporter.class);
 
-		verify(client, times(1)).startTestItem(any());
+		ArgumentCaptor<StartTestItemRQ> suiteCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(client).startTestItem(suiteCaptor.capture());
+		assertThat(suiteCaptor.getValue().getAttributes(), anyOf(nullValue(), emptyIterable()));
+
 		ArgumentCaptor<StartTestItemRQ> testCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(client, times(3)).startTestItem(same(suiteId), testCaptor.capture());
-
-		List<String> items = testCaptor.getAllValues().stream().map(StartTestItemRQ::getName).collect(Collectors.toList());
-		assertThat(items, equalTo(Collections.nCopies(3, "Scenario Outline: Test with different parameters")));
+		testCaptor.getAllValues().stream().map(StartTestItemRQ::getAttributes).forEach(a -> {
+			assertThat(a, anyOf(nullValue(), hasSize(1)));
+			ItemAttributesRQ attribute = a.iterator().next();
+			assertThat(attribute.getKey(), nullValue());
+			assertThat(attribute.getValue(), equalTo("@test"));
+		});
 
 		testIds.forEach(id -> {
 			ArgumentCaptor<StartTestItemRQ> stepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 			verify(client, times(3)).startTestItem(same(id), stepCaptor.capture());
-			List<StartTestItemRQ> steps = stepCaptor.getAllValues();
-			IntStream.range(0, steps.size()).forEach(i -> assertThat(steps.get(i).getName(), matchesPattern(STEP_PATTERNS[i])));
+			stepCaptor.getAllValues().forEach(s -> assertThat(s.getAttributes(), anyOf(nullValue(), emptyIterable())));
 		});
-	}
-
-	@Test
-	public void verify_dynamic_scenario_outline_names() {
-		TestUtils.runTests(RunDynamicScenarioOutlineTitlesTestStepReporter.class);
-
-		verify(client, times(1)).startTestItem(any());
-		ArgumentCaptor<StartTestItemRQ> testCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(client, times(3)).startTestItem(same(suiteId), testCaptor.capture());
-
-		List<String> items = testCaptor.getAllValues().stream().map(StartTestItemRQ::getName).collect(Collectors.toList());
-
-		assertThat(items, hasItems(
-				"Scenario Outline: Test with the parameter \"first\"",
-				"Scenario Outline: Test with the parameter \"second\"",
-				"Scenario Outline: Test with the parameter \"third\""
-		));
 	}
 }

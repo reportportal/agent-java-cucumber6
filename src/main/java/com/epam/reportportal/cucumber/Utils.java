@@ -16,6 +16,7 @@
 package com.epam.reportportal.cucumber;
 
 import com.epam.reportportal.listeners.ItemStatus;
+import io.cucumber.core.gherkin.Feature;
 import io.cucumber.plugin.event.Argument;
 import io.cucumber.plugin.event.Status;
 import io.cucumber.plugin.event.TestStep;
@@ -25,15 +26,15 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static java.util.Optional.ofNullable;
 
 /**
+ * Utility class for static methods
+ *
  * @author Vadzim Hushchanskou
  */
 public class Utils {
@@ -42,10 +43,11 @@ public class Utils {
 	private static final String DEFINITION_MATCH_FIELD_NAME = "definitionMatch";
 	private static final String STEP_DEFINITION_FIELD_NAME = "stepDefinition";
 	private static final String METHOD_FIELD_NAME = "method";
-	protected static final String ONE_SPACE = "&nbsp;";
-	protected static final String NEW_LINE = "\r\n";
-	protected static final String TABLE_INDENT = "&nbsp;&nbsp;&nbsp;&nbsp;";
-	protected static final String TABLE_SEPARATOR = "|";
+	public static final String ONE_SPACE = "&nbsp;";
+	public static final String NEW_LINE = "\r\n";
+	public static final String TABLE_INDENT = "&nbsp;&nbsp;&nbsp;&nbsp;";
+	public static final String TABLE_SEPARATOR = "|";
+	public static final String TAG_KEY = "@";
 
 	private Utils() {
 		throw new AssertionError("No instances should exist for the class!");
@@ -148,5 +150,29 @@ public class Utils {
 			result.append(NEW_LINE);
 		}
 		return result.toString().trim();
+	}
+
+	/**
+	 * Parses a feature source and return all declared tags before the feature.
+	 *
+	 * @param feature Cucumber's Feature object
+	 * @return tags set
+	 */
+	@Nonnull
+	public static Set<String> getTags(@Nonnull Feature feature) {
+		return feature.getKeyword().map(k->{
+			Set<String> tags = new HashSet<>();
+			for(String line : feature.getSource().split("\\r?\\n")) {
+				String bareLine = line.trim();
+				if(bareLine.startsWith(k)) {
+					return tags;
+				}
+				if (!line.startsWith(TAG_KEY)) {
+					continue;
+				}
+				tags.addAll(Arrays.asList(line.split("\\s+")));
+			}
+			return tags;
+		}).orElse(Collections.emptySet());
 	}
 }

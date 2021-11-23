@@ -20,7 +20,7 @@ import com.epam.reportportal.cucumber.ScenarioReporter;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
-import io.cucumber.messages.Messages;
+import io.cucumber.core.gherkin.Feature;
 
 import javax.annotation.Nonnull;
 import java.net.URI;
@@ -35,7 +35,7 @@ public class TestScenarioReporterWithPause extends ScenarioReporter {
 
 	@Override
 	@Nonnull
-	protected StartTestItemRQ buildStartFeatureRequest(@Nonnull Messages.GherkinDocument.Feature feature, @Nonnull URI uri) {
+	protected StartTestItemRQ buildStartFeatureRequest(@Nonnull Feature feature, @Nonnull URI uri) {
 		StartTestItemRQ result = super.buildStartFeatureRequest(feature, uri);
 		try {
 			Thread.sleep(CommonUtils.MINIMAL_TEST_PAUSE);

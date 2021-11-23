@@ -17,7 +17,8 @@ package com.epam.reportportal.cucumber;
 
 import com.epam.reportportal.utils.MemoizingSupplier;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
-import io.cucumber.plugin.event.HookType;
+import io.cucumber.plugin.event.HookTestStep;
+import io.cucumber.plugin.event.TestCase;
 import io.cucumber.plugin.event.TestStep;
 import io.reactivex.Maybe;
 
@@ -43,9 +44,6 @@ import java.util.Optional;
  * Outline example rows are reported as individual scenarios with [ROW NUMBER]
  * after the name.
  *
- * @author Sergey_Gvozdyukevich
- * @author Serhii Zharskyi
- * @author Vitaliy Tsvihun
  * @author Vadzim Hushchanskou
  */
 public class ScenarioReporter extends AbstractReporter {
@@ -71,8 +69,8 @@ public class ScenarioReporter extends AbstractReporter {
 	}
 
 	@Override
-	protected void beforeStep(@Nonnull TestStep testStep) {
-		super.beforeStep(testStep);
+	protected void beforeStep(@Nonnull TestCase testCase, @Nonnull TestStep testStep) {
+		super.beforeStep(testCase, testStep);
 		String description = buildMultilineArgument(testStep).trim();
 		if (!description.isEmpty()) {
 			sendLog(description);
@@ -81,8 +79,8 @@ public class ScenarioReporter extends AbstractReporter {
 
 	@Override
 	@Nonnull
-	protected StartTestItemRQ buildStartHookRequest(@Nonnull HookType hookType) {
-		StartTestItemRQ rq = super.buildStartHookRequest(hookType);
+	protected StartTestItemRQ buildStartHookRequest(@Nonnull TestCase testCase, @Nonnull HookTestStep testStep) {
+		StartTestItemRQ rq = super.buildStartHookRequest(testCase, testStep);
 		rq.setHasStats(false);
 		return rq;
 	}
@@ -130,7 +128,7 @@ public class ScenarioReporter extends AbstractReporter {
 			rq.setName(DUMMY_ROOT_SUITE_NAME);
 			rq.setStartTime(Calendar.getInstance().getTime());
 			rq.setType(RP_STORY_TYPE);
-			return launch.get().startTestItem(rq);
+			return getLaunch().startTestItem(rq);
 		});
 	}
 }

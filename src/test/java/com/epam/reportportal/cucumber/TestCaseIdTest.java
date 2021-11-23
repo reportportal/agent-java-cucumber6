@@ -97,7 +97,7 @@ public class TestCaseIdTest {
 		verify(client, times(1)).startTestItem(same(testId), captor.capture());
 
 		StartTestItemRQ rq = captor.getValue();
-		assertThat(rq.getTestCaseId(), equalTo("src/test/resources/features/belly.feature:4"));
+		assertThat(rq.getTestCaseId(), equalTo("src/test/resources/features/belly.feature:5"));
 	}
 
 	@Test
