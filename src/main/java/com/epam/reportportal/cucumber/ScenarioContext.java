@@ -16,15 +16,14 @@
 
 package com.epam.reportportal.cucumber;
 
-import com.epam.reportportal.listeners.ItemStatus;
-import io.cucumber.plugin.event.*;
+import io.cucumber.plugin.event.Node;
+import io.cucumber.plugin.event.TestCase;
 import io.reactivex.Maybe;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.net.URI;
 import java.util.Optional;
-import java.util.Set;
 
 import static java.util.Optional.ofNullable;
 
@@ -32,7 +31,6 @@ public class ScenarioContext {
 
 	private final int line;
 	private final URI uri;
-	private final FeatureContext feature;
 	private final RuleContext rule;
 	private final Node.Scenario scenario;
 	private final Node.ScenarioOutline scenarioOutline;
@@ -43,10 +41,8 @@ public class ScenarioContext {
 	private Maybe<String> hookId = Maybe.empty();
 	private Maybe<String> stepId = Maybe.empty();
 
-	public ScenarioContext(@Nonnull URI scenarioFilePath, @Nonnull FeatureContext featureContext, @Nullable RuleContext ruleNode,
-			@Nonnull Node.Scenario scenarioNode) {
+	public ScenarioContext(@Nonnull URI scenarioFilePath, @Nullable RuleContext ruleNode, @Nonnull Node.Scenario scenarioNode) {
 		uri = scenarioFilePath;
-		feature = featureContext;
 		rule = ruleNode;
 		scenario = scenarioNode;
 		scenarioOutline = null;
@@ -54,10 +50,9 @@ public class ScenarioContext {
 		line = scenario.getLocation().getLine();
 	}
 
-	public ScenarioContext(@Nonnull URI scenarioFilePath, @Nonnull FeatureContext featureContext, @Nullable RuleContext ruleNode,
-			@Nonnull Node.ScenarioOutline scenarioOutlineNode, @Nonnull Node.Example exampleNode) {
+	public ScenarioContext(@Nonnull URI scenarioFilePath, @Nullable RuleContext ruleNode, @Nonnull Node.ScenarioOutline scenarioOutlineNode,
+			@Nonnull Node.Example exampleNode) {
 		uri = scenarioFilePath;
-		feature = featureContext;
 		rule = ruleNode;
 		scenario = null;
 		scenarioOutline = scenarioOutlineNode;
@@ -69,6 +64,8 @@ public class ScenarioContext {
 		return line;
 	}
 
+	@Nonnull
+	@SuppressWarnings("unused")
 	public Optional<TestCase> getTestCase() {
 		return ofNullable(testCase);
 	}
@@ -77,12 +74,13 @@ public class ScenarioContext {
 		this.testCase = testCase;
 	}
 
+	@Nonnull
 	public Optional<RuleContext> getRule() {
 		return ofNullable(rule);
 	}
 
 	@Nonnull
-	public URI getUri(){
+	public URI getUri() {
 		return uri;
 	}
 
@@ -111,5 +109,11 @@ public class ScenarioContext {
 	@Nonnull
 	public Maybe<String> getStepId() {
 		return stepId;
+	}
+
+	@Nonnull
+	@SuppressWarnings("unused")
+	public Optional<Node.Example> getExample() {
+		return ofNullable(example);
 	}
 }
