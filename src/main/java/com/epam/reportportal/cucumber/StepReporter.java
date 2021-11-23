@@ -36,9 +36,6 @@ import java.util.Optional;
  * created in hooks will be attached to these, and not to the actual failing
  * steps!)
  *
- * @author Sergey_Gvozdyukevich
- * @author Serhii Zharskyi
- * @author Vitaliy Tsvihun
  * @author Vadzim Hushchanskou
  */
 public class StepReporter extends AbstractReporter {

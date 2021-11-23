@@ -44,9 +44,6 @@ import java.util.Optional;
  * Outline example rows are reported as individual scenarios with [ROW NUMBER]
  * after the name.
  *
- * @author Sergey_Gvozdyukevich
- * @author Serhii Zharskyi
- * @author Vitaliy Tsvihun
  * @author Vadzim Hushchanskou
  */
 public class ScenarioReporter extends AbstractReporter {

@@ -33,6 +33,8 @@ import java.util.stream.IntStream;
 import static java.util.Optional.ofNullable;
 
 /**
+ * Utility class for static methods
+ *
  * @author Vadzim Hushchanskou
  */
 public class Utils {
