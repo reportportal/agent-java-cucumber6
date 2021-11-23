@@ -276,13 +276,9 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		return launch.get().startTestItem(featureId, startScenarioRq);
 	}
 
-	private void removeFromTree(FeatureContext featureContext, ScenarioContext scenarioContext) {
-		retrieveLeaf(featureContext.getUri(), itemTree).ifPresent(suiteLeaf -> suiteLeaf.getChildItems()
-				.remove(createKey(scenarioContext.getLine())));
-	}
-
 	@FunctionalInterface
 	private interface ScenarioContextAware {
+
 		void executeWithContext(@Nonnull FeatureContext featureContext, @Nonnull ScenarioContext scenarioContext);
 	}
 
@@ -299,6 +295,11 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		});
 	}
 
+	private void removeFromTree(Feature featureContext, TestCase scenarioContext) {
+		retrieveLeaf(featureContext.getUri(), itemTree).ifPresent(suiteLeaf -> suiteLeaf.getChildItems()
+				.remove(createKey(scenarioContext.getLocation().getLine())));
+	}
+
 	/**
 	 * Finish Cucumber scenario
 	 * Put scenario end time in a map to check last scenario end time per feature
@@ -311,7 +312,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 			URI featureUri = f.getUri();
 			Date endTime = finishTestItem(s.getId(), mapItemStatus(event.getResult().getStatus()));
 			featureEndTime.put(featureUri, endTime);
-			removeFromTree(f, s);
+			removeFromTree(f.getFeature(), testCase);
 		});
 	}
 
@@ -363,6 +364,11 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		return launch.get().startTestItem(scenarioId, startStepRq);
 	}
 
+	private void addToTree(@Nonnull TestCase scenario, @Nullable String text, @Nullable Maybe<String> stepId) {
+		retrieveLeaf(scenario.getUri(), scenario.getLocation().getLine(), itemTree).ifPresent(scenarioLeaf -> scenarioLeaf.getChildItems()
+				.put(createKey(text), TestItemTree.createTestItemLeaf(stepId)));
+	}
+
 	/**
 	 * Start Cucumber step
 	 *
@@ -379,7 +385,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 				s.setStepId(stepId);
 				String stepText = step.getStep().getText();
 				if (launch.get().getParameters().isCallbackReportingEnabled()) {
-					addToTree(s, stepText, stepId);
+					addToTree(testCase, stepText, stepId);
 				}
 			}
 		});
@@ -444,6 +450,11 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		});
 	}
 
+	private void removeFromTree(TestCase testCase, String text) {
+		retrieveLeaf(testCase.getUri(), testCase.getLocation().getLine(), itemTree).ifPresent(scenarioLeaf -> scenarioLeaf.getChildItems()
+				.remove(createKey(text)));
+	}
+
 	/**
 	 * Called when before/after-hooks are finished
 	 *
@@ -458,7 +469,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 			s.setHookId(Maybe.empty());
 			if (step.getHookType() == HookType.AFTER_STEP) {
 				if (step instanceof PickleStepTestStep) {
-					removeFromTree(s, ((PickleStepTestStep) step).getStep().getText());
+					removeFromTree(testCase, ((PickleStepTestStep) step).getStep().getText());
 				}
 			}
 		});
@@ -654,6 +665,10 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		return root.map(r -> launch.get().startTestItem(r, startFeatureRq)).orElseGet(() -> launch.get().startTestItem(startFeatureRq));
 	}
 
+	private void addToTree(Feature feature, Maybe<String> featureId) {
+		getItemTree().getTestItems().put(createKey(feature.getUri()), TestItemTree.createTestItemLeaf(featureId));
+	}
+
 	/**
 	 * Starts a Cucumber Test Case start, also starts corresponding Feature if is not started already.
 	 *
@@ -667,6 +682,9 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 				getRootItemId(); // trigger root item creation
 				StartTestItemRQ featureRq = buildStartFeatureRequest(f.getFeature(), uri);
 				f.setId(startFeature(featureRq));
+				if (launch.get().getParameters().isCallbackReportingEnabled()) {
+					addToTree(f.getFeature(), f.getId());
+				}
 			}
 		});
 		execute(testCase, (f, s) -> {
@@ -754,8 +772,8 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		publisher.registerHandlerFor(WriteEvent.class, getWriteEventHandler());
 	}
 
-	private void removeFromTree(FeatureContext featureContext) {
-		itemTree.getTestItems().remove(createKey(featureContext.getUri()));
+	private void removeFromTree(Feature feature) {
+		itemTree.getTestItems().remove(createKey(feature.getUri()));
 	}
 
 	protected void handleEndOfFeature() {
@@ -763,7 +781,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 			Date featureCompletionDateTime = featureEndTime.get(f.getUri());
 			f.getCurrentRule().ifPresent(r -> finishTestItem(r.getId(), null, featureCompletionDateTime));
 			finishTestItem(f.getId(), null, featureCompletionDateTime);
-			removeFromTree(f);
+			removeFromTree(f.getFeature());
 		});
 		featureContextMap.clear();
 	}
@@ -786,16 +804,6 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		} else {
 			afterStep(event.getTestCase(), event.getTestStep(), event.getResult());
 		}
-	}
-
-	protected void addToTree(@Nonnull ScenarioContext scenarioContext, @Nullable String text, @Nullable Maybe<String> stepId) {
-		retrieveLeaf(scenarioContext.getUri(), scenarioContext.getLine(), itemTree).ifPresent(scenarioLeaf -> scenarioLeaf.getChildItems()
-				.put(createKey(text), TestItemTree.createTestItemLeaf(stepId)));
-	}
-
-	protected void removeFromTree(ScenarioContext scenarioContext, String text) {
-		retrieveLeaf(scenarioContext.getUri(), scenarioContext.getLine(), itemTree).ifPresent(scenarioLeaf -> scenarioLeaf.getChildItems()
-				.remove(createKey(text)));
 	}
 
 	/**
