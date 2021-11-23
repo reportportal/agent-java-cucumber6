@@ -36,6 +36,7 @@ public class ScenarioContext {
 	private final RuleContext rule;
 	private final Node.Scenario scenario;
 	private final Node.ScenarioOutline scenarioOutline;
+	private final Node.Example example;
 
 	private TestCase testCase;
 	private Maybe<String> id = Maybe.empty();
@@ -49,16 +50,18 @@ public class ScenarioContext {
 		rule = ruleNode;
 		scenario = scenarioNode;
 		scenarioOutline = null;
+		example = null;
 		line = scenario.getLocation().getLine();
 	}
 
 	public ScenarioContext(@Nonnull URI scenarioFilePath, @Nonnull FeatureContext featureContext, @Nullable RuleContext ruleNode,
-			@Nonnull Node.ScenarioOutline scenarioOutlineNode) {
+			@Nonnull Node.ScenarioOutline scenarioOutlineNode, @Nonnull Node.Example exampleNode) {
 		uri = scenarioFilePath;
 		feature = featureContext;
 		rule = ruleNode;
 		scenario = null;
 		scenarioOutline = scenarioOutlineNode;
+		example = exampleNode;
 		line = scenarioOutline.getLocation().getLine();
 	}
 

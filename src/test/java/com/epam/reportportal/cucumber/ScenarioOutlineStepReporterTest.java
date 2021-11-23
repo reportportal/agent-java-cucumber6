@@ -35,12 +35,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.*;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
 
 /**
@@ -81,18 +83,27 @@ public class ScenarioOutlineStepReporterTest {
 		TestStepReporter.RP.set(reportPortal);
 	}
 
+	public static final Pattern[] STEP_PATTERNS = new Pattern[] { Pattern.compile("Given It is test with parameters"),
+			Pattern.compile("When I have parameter \"\\w+\""), Pattern.compile("Then I emit number \\d+ on level info") };
+
 	// Do not add iteration indexes / numbers, since it breaks re-runs
 	@Test
 	public void verify_scenario_outline_names() {
 		TestUtils.runTests(RunOutlineParametersTestStepReporter.class);
 
 		verify(client, times(1)).startTestItem(any());
-		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(client, times(3)).startTestItem(same(suiteId), captor.capture());
+		ArgumentCaptor<StartTestItemRQ> testCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(client, times(3)).startTestItem(same(suiteId), testCaptor.capture());
 
-		List<String> items = captor.getAllValues().stream().map(StartTestItemRQ::getName).collect(Collectors.toList());
-
+		List<String> items = testCaptor.getAllValues().stream().map(StartTestItemRQ::getName).collect(Collectors.toList());
 		assertThat(items, equalTo(Collections.nCopies(3, "Scenario Outline: Test with different parameters")));
+
+		testIds.forEach(id -> {
+			ArgumentCaptor<StartTestItemRQ> stepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+			verify(client, times(3)).startTestItem(same(id), stepCaptor.capture());
+			List<StartTestItemRQ> steps = stepCaptor.getAllValues();
+			IntStream.range(0, steps.size()).forEach(i -> assertThat(steps.get(i).getName(), matchesPattern(STEP_PATTERNS[i])));
+		});
 	}
 
 	@Test
@@ -100,10 +111,10 @@ public class ScenarioOutlineStepReporterTest {
 		TestUtils.runTests(RunDynamicScenarioOutlineTitlesTestStepReporter.class);
 
 		verify(client, times(1)).startTestItem(any());
-		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(client, times(3)).startTestItem(same(suiteId), captor.capture());
+		ArgumentCaptor<StartTestItemRQ> testCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(client, times(3)).startTestItem(same(suiteId), testCaptor.capture());
 
-		List<String> items = captor.getAllValues().stream().map(StartTestItemRQ::getName).collect(Collectors.toList());
+		List<String> items = testCaptor.getAllValues().stream().map(StartTestItemRQ::getName).collect(Collectors.toList());
 
 		assertThat(items, hasItems(
 				"Scenario Outline: Test with the parameter \"first\"",

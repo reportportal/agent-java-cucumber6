@@ -51,8 +51,13 @@ public class FeatureContext {
 		}
 		if (node instanceof Node.ScenarioOutline) {
 			Node.ScenarioOutline scenarioOutline = (Node.ScenarioOutline) node;
-			int line = scenarioOutline.getLocation().getLine();
-			scenarios.put(line, new ScenarioContext(uri, this, ruleQueue.peekLast(), scenarioOutline));
+			scenarioOutline.elements()
+					.stream()
+					.flatMap(e -> e.elements().stream())
+					.forEach(e -> scenarios.put(
+							e.getLocation().getLine(),
+							new ScenarioContext(uri, this, ruleQueue.peekLast(), scenarioOutline, e)
+					));
 		}
 	}
 
@@ -74,7 +79,7 @@ public class FeatureContext {
 	}
 
 	@Nonnull
-	public URI getUri(){
+	public URI getUri() {
 		return uri;
 	}
 
