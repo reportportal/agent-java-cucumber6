@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- Cucumber 7 support
 
 ## [5.1.0-RC-4]
 ### Added
