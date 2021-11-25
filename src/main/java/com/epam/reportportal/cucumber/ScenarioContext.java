@@ -112,7 +112,6 @@ public class ScenarioContext {
 	}
 
 	@Nonnull
-	@SuppressWarnings("unused")
 	public Optional<Node.Example> getExample() {
 		return ofNullable(example);
 	}

@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- Scenario Outline code reference line numbers
 
 ## [5.1.0-RC-5]
 ### Added
