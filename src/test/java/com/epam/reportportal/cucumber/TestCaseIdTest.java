@@ -27,6 +27,7 @@ import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.cucumber.testng.AbstractTestNGCucumberTests;
 import io.cucumber.testng.CucumberOptions;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -65,10 +67,21 @@ public class TestCaseIdTest {
 
 	}
 
+	@CucumberOptions(features = "src/test/resources/features/BasicScenarioOutlineParameters.feature", glue = {
+			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
+			"com.epam.reportportal.cucumber.integration.TestScenarioReporter" })
+	public static class OutlineScenarioReporter extends AbstractTestNGCucumberTests {
+
+	}
+
 	private final String launchId = CommonUtils.namedId("launch_");
 	private final String suiteId = CommonUtils.namedId("suite_");
 	private final String testId = CommonUtils.namedId("test_");
 	private final List<String> stepIds = Stream.generate(() -> CommonUtils.namedId("step_")).limit(3).collect(Collectors.toList());
+
+	public final List<Pair<String, String>> nestedSteps = stepIds.stream()
+			.flatMap(s -> Stream.generate(() -> Pair.of(s, CommonUtils.namedId("nested_step"))).limit(3))
+			.collect(Collectors.toList());
 
 	private final ListenerParameters params = TestUtils.standardParameters();
 	private final ReportPortalClient client = mock(ReportPortalClient.class);
@@ -131,5 +144,23 @@ public class TestCaseIdTest {
 
 		StartTestItemRQ step = captor.getValue();
 		assertThat(step.getTestCaseId(), equalTo(TestCaseIdOnMethodSteps.TEST_CASE_ID));
+	}
+
+	private static final String[] TEST_CASE_IDS = new String[] { "src/test/resources/features/BasicScenarioOutlineParameters.feature:10",
+			"src/test/resources/features/BasicScenarioOutlineParameters.feature:11",
+			"src/test/resources/features/BasicScenarioOutlineParameters.feature:12" };
+
+	@Test
+	public void verify_test_case_id_scenario_outline() {
+		TestUtils.mockNestedSteps(client, nestedSteps);
+		TestUtils.runTests(OutlineScenarioReporter.class);
+
+		verify(client, times(1)).startTestItem(any());
+		verify(client, times(1)).startTestItem(same(suiteId), any());
+		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(client, times(3)).startTestItem(same(testId), captor.capture());
+
+		List<StartTestItemRQ> requests = captor.getAllValues();
+		IntStream.range(0, requests.size()).forEach(i -> assertThat(requests.get(i).getTestCaseId(), equalTo(TEST_CASE_IDS[i])));
 	}
 }

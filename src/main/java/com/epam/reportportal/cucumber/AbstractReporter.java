@@ -233,6 +233,19 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	}
 
 	/**
+	 * Return a Test Case ID for a feature file
+	 *
+	 * @param codeRef   a code reference
+	 * @param arguments a scenario arguments
+	 * @return Test Case ID entity or null if it's not possible to calculate
+	 */
+	@Nullable
+	@SuppressWarnings("unchecked")
+	protected TestCaseIdEntry getTestCaseId(@Nullable String codeRef, @Nullable List<Argument> arguments) {
+		return TestCaseIdUtils.getTestCaseId(codeRef, (List<Object>) ARGUMENTS_TRANSFORM.apply(arguments));
+	}
+
+	/**
 	 * Extension point to customize scenario creation event/request
 	 *
 	 * @param testCase Cucumber's TestCase object
@@ -326,6 +339,30 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	}
 
 	/**
+	 * Return a Test Case ID for mapped code
+	 *
+	 * @param testStep Cucumber's TestStep object
+	 * @param codeRef  a code reference
+	 * @return Test Case ID entity or null if it's not possible to calculate
+	 */
+	@Nullable
+	@SuppressWarnings("unchecked")
+	protected TestCaseIdEntry getTestCaseId(@Nonnull TestStep testStep, @Nullable String codeRef) {
+		List<Argument> arguments = ((PickleStepTestStep) testStep).getDefinitionArgument();
+
+		return ofNullable(codeRef).flatMap(r -> {
+			Pair<String, String> splitCodeRef = parseJavaCodeRef(codeRef);
+			Optional<Class<?>> testStepClass = getStepClass(splitCodeRef.getKey(), codeRef);
+			return testStepClass.flatMap(c -> getStepMethod(c, splitCodeRef.getValue()))
+					.map(m -> TestCaseIdUtils.getTestCaseId(m.getAnnotation(TestCaseId.class),
+							m,
+							codeRef,
+							(List<Object>) ARGUMENTS_TRANSFORM.apply(arguments)
+					));
+		}).orElseGet(() -> getTestCaseId(codeRef, arguments));
+	}
+
+	/**
 	 * Extension point to customize test creation event/request
 	 *
 	 * @param testStep   a cucumber step object
@@ -402,7 +439,6 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 			s.setStepId(Maybe.empty());
 		});
 	}
-
 
 	/**
 	 * Returns hook type and name as a <code>Pair</code>
@@ -653,7 +689,10 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 				}
 			}
 			Maybe<String> rootId = rule.map(RuleContext::getId).orElseGet(f::getId);
-			s.setId(startScenario(rootId, buildStartScenarioRequest(scenario, scenarioName, s.getUri(), s.getLine())));
+
+			// If it's a ScenarioOutline use Example's line number as code reference to detach one Test Item from another
+			int codeLine = s.getExample().map(e -> e.getLocation().getLine()).orElse(s.getLine());
+			s.setId(startScenario(rootId, buildStartScenarioRequest(scenario, scenarioName, s.getUri(), codeLine)));
 			if (launch.get().getParameters().isCallbackReportingEnabled()) {
 				addToTree(feature, scenario, s.getId());
 			}
@@ -1052,43 +1091,6 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 				.map(m -> m.getAnnotation(Attributes.class))
 				.map(AttributeParser::retrieveAttributes)
 				.orElse(null);
-	}
-
-	/**
-	 * Return a Test Case ID for mapped code
-	 *
-	 * @param testStep Cucumber's TestStep object
-	 * @param codeRef  a code reference
-	 * @return Test Case ID entity or null if it's not possible to calculate
-	 */
-	@Nullable
-	@SuppressWarnings("unchecked")
-	protected TestCaseIdEntry getTestCaseId(@Nonnull TestStep testStep, @Nullable String codeRef) {
-		List<Argument> arguments = ((PickleStepTestStep) testStep).getDefinitionArgument();
-
-		return ofNullable(codeRef).flatMap(r -> {
-			Pair<String, String> splitCodeRef = parseJavaCodeRef(codeRef);
-			Optional<Class<?>> testStepClass = getStepClass(splitCodeRef.getKey(), codeRef);
-			return testStepClass.flatMap(c -> getStepMethod(c, splitCodeRef.getValue()))
-					.map(m -> TestCaseIdUtils.getTestCaseId(m.getAnnotation(TestCaseId.class),
-							m,
-							codeRef,
-							(List<Object>) ARGUMENTS_TRANSFORM.apply(arguments)
-					));
-		}).orElseGet(() -> getTestCaseId(codeRef, arguments));
-	}
-
-	/**
-	 * Return a Test Case ID for a feature file
-	 *
-	 * @param codeRef   a code reference
-	 * @param arguments a scenario arguments
-	 * @return Test Case ID entity or null if it's not possible to calculate
-	 */
-	@Nullable
-	@SuppressWarnings("unchecked")
-	protected TestCaseIdEntry getTestCaseId(@Nullable String codeRef, @Nullable List<Argument> arguments) {
-		return TestCaseIdUtils.getTestCaseId(codeRef, (List<Object>) ARGUMENTS_TRANSFORM.apply(arguments));
 	}
 
 	/**
