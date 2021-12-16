@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- Invalid Data Tables format for some Report Portal versions
 
 ## [5.1.0-RC-6]
 ### Fixed
