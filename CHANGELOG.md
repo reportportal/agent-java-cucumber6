@@ -3,6 +3,8 @@
 ## [Unreleased]
 ### Fixed
 - Invalid Data Tables format for some Report Portal versions
+### Changed
+- Client version updated on [5.1.1](https://github.com/reportportal/client-java/releases/tag/5.1.1)
 
 ## [5.1.0-RC-6]
 ### Fixed
@@ -11,6 +13,8 @@
 ## [5.1.0-RC-5]
 ### Added
 - Cucumber 7 support
+### Changed
+- Client version updated on [5.1.0](https://github.com/reportportal/client-java/releases/tag/5.1.0)
 
 ## [5.1.0-RC-4]
 ### Added
