@@ -12,6 +12,7 @@ import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.cucumber.testng.AbstractTestNGCucumberTests;
 import io.cucumber.testng.CucumberOptions;
+import io.reactivex.Maybe;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -82,7 +83,7 @@ public class CallbackReportingIntegrationTest {
 		TestScenarioReporter.RP.set(reportPortal);
 		TestStepReporter.addReportPortal(reportPortal);
 		TestStepReporter.RP.set(reportPortal);
-		when(client.log(any(SaveLogRQ.class))).thenReturn(CommonUtils.createMaybe(new EntryCreatedAsyncRS()));
+		when(client.log(any(SaveLogRQ.class))).thenReturn(Maybe.just(new EntryCreatedAsyncRS()));
 	}
 
 	@Test
