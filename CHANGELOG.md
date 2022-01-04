@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.1.0]
 ### Fixed
 - Invalid Data Tables format for some Report Portal versions
 ### Changed
