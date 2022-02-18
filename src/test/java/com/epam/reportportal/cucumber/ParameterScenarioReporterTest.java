@@ -51,7 +51,6 @@ import static org.mockito.Mockito.*;
 /**
  * @author <a href="mailto:ihar_kahadouski@epam.com">Ihar Kahadouski</a>
  */
-@SuppressWarnings("ReactiveStreamsUnusedPublisher")
 public class ParameterScenarioReporterTest {
 
 	@CucumberOptions(features = "src/test/resources/features/OneSimpleAndOneScenarioOutline.feature", glue = {
