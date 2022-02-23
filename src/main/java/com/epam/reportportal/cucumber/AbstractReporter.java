@@ -282,7 +282,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 */
 	@Nonnull
 	protected Maybe<String> startScenario(@Nonnull Maybe<String> featureId, @Nonnull StartTestItemRQ startScenarioRq) {
-		return launch.get().startTestItem(featureId, startScenarioRq);
+		return getLaunch().startTestItem(featureId, startScenarioRq);
 	}
 
 	@FunctionalInterface
@@ -394,7 +394,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 */
 	@Nonnull
 	protected Maybe<String> startStep(@Nonnull Maybe<String> scenarioId, @Nonnull StartTestItemRQ startStepRq) {
-		return launch.get().startTestItem(scenarioId, startStepRq);
+		return getLaunch().startTestItem(scenarioId, startStepRq);
 	}
 
 	private void addToTree(@Nonnull TestCase scenario, @Nullable String text, @Nullable Maybe<String> stepId) {
@@ -417,7 +417,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 				Maybe<String> stepId = startStep(s.getId(), rq);
 				s.setStepId(stepId);
 				String stepText = step.getStep().getText();
-				if (launch.get().getParameters().isCallbackReportingEnabled()) {
+				if (getLaunch().getParameters().isCallbackReportingEnabled()) {
 					addToTree(testCase, stepText, stepId);
 				}
 			}
@@ -498,7 +498,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 */
 	@Nonnull
 	protected Maybe<String> startHook(@Nonnull Maybe<String> parentId, @Nonnull StartTestItemRQ rq) {
-		return launch.get().startTestItem(parentId, rq);
+		return getLaunch().startTestItem(parentId, rq);
 	}
 
 	/**
@@ -660,7 +660,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 */
 	@Nonnull
 	protected Maybe<String> startRule(@Nonnull Maybe<String> featureId, @Nonnull StartTestItemRQ ruleRq) {
-		return launch.get().startTestItem(featureId, ruleRq);
+		return getLaunch().startTestItem(featureId, ruleRq);
 	}
 
 	/**
@@ -693,7 +693,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 			// If it's a ScenarioOutline use Example's line number as code reference to detach one Test Item from another
 			int codeLine = s.getExample().map(e -> e.getLocation().getLine()).orElse(s.getLine());
 			s.setId(startScenario(rootId, buildStartScenarioRequest(scenario, scenarioName, s.getUri(), codeLine)));
-			if (launch.get().getParameters().isCallbackReportingEnabled()) {
+			if (getLaunch().getParameters().isCallbackReportingEnabled()) {
 				addToTree(feature, scenario, s.getId());
 			}
 		});
@@ -729,7 +729,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	@Nonnull
 	protected Maybe<String> startFeature(@Nonnull StartTestItemRQ startFeatureRq) {
 		Optional<Maybe<String>> root = getRootItemId();
-		return root.map(r -> launch.get().startTestItem(r, startFeatureRq)).orElseGet(() -> launch.get().startTestItem(startFeatureRq));
+		return root.map(r -> getLaunch().startTestItem(r, startFeatureRq)).orElseGet(() -> getLaunch().startTestItem(startFeatureRq));
 	}
 
 	private void addToTree(Feature feature, Maybe<String> featureId) {
@@ -745,11 +745,12 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		TestCase testCase = event.getTestCase();
 		URI uri = testCase.getUri();
 		execute(uri, f -> {
+			//noinspection ReactiveStreamsUnusedPublisher
 			if (f.getId().equals(Maybe.empty())) {
 				getRootItemId(); // trigger root item creation
 				StartTestItemRQ featureRq = buildStartFeatureRequest(f.getFeature(), uri);
 				f.setId(startFeature(featureRq));
-				if (launch.get().getParameters().isCallbackReportingEnabled()) {
+				if (getLaunch().getParameters().isCallbackReportingEnabled()) {
 					addToTree(f.getFeature(), f.getId());
 				}
 			}
@@ -905,7 +906,8 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 			return null;
 		}
 		FinishTestItemRQ rq = buildFinishTestItemRequest(itemId, dateTime, status);
-		launch.get().finishTestItem(itemId, rq);
+		//noinspection ReactiveStreamsUnusedPublisher
+		getLaunch().finishTestItem(itemId, rq);
 		return rq.getEndTime();
 	}
 
