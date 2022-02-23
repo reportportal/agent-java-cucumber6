@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 ### Changed
-- Cucumber version updated on 7.2.2
+- Cucumber version updated on 7.2.3
 
 ## [5.1.0]
 ### Fixed
