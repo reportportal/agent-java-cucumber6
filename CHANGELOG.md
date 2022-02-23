@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.1.1]
 ### Changed
 - Cucumber version updated on 7.2.3
 
