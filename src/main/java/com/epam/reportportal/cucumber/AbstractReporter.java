@@ -125,7 +125,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		return rq;
 	}
 
-	private final Supplier<Launch> launch = new MemoizingSupplier<>(new Supplier<Launch>() {
+	private final Supplier<Launch> launch = new MemoizingSupplier<>(new Supplier<>() {
 
 		/* should not be lazy */
 		private final Date startTime = Calendar.getInstance().getTime();
@@ -675,7 +675,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 			Optional<RuleContext> rule = s.getRule();
 			Optional<RuleContext> currentRule = f.getCurrentRule();
 			if (!currentRule.equals(rule)) {
-				if (!currentRule.isPresent()) {
+				if (currentRule.isEmpty()) {
 					rule.ifPresent(r -> {
 						r.setId(startRule(f.getId(), buildStartRuleRequest(r.getRule(), getCodeRef(feature.getUri(), r.getLine()))));
 						f.setCurrentRule(r);
