@@ -44,7 +44,7 @@ dependencies {
     api 'com.google.code.findbugs:jsr305:3.0.2'
 
     implementation "io.cucumber:cucumber-gherkin:${project.cucumber_version}"
-    implementation 'org.slf4j:slf4j-api:2.0.4'
+    implementation 'org.slf4j:slf4j-api:2.0.7'
 
     testImplementation "io.cucumber:cucumber-java:${project.cucumber_version}"
     testImplementation 'com.epam.reportportal:agent-java-test-utils:0.0.2'
@@ -53,7 +53,7 @@ dependencies {
     testImplementation 'org.hamcrest:hamcrest-core:2.2'
     testImplementation 'org.mockito:mockito-core:3.3.3'
     testImplementation 'org.mockito:mockito-junit-jupiter:3.3.3'
-    testImplementation 'ch.qos.logback:logback-classic:1.4.5'
+    testImplementation 'ch.qos.logback:logback-classic:1.4.8'
     testImplementation 'com.epam.reportportal:logger-java-logback:5.1.5'
     testImplementation ("org.junit.platform:junit-platform-runner:${project.junit_runner_version}") {
         exclude module: 'junit'
