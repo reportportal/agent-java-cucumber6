@@ -1,4 +1,4 @@
-# ReportPortal agent for Cucumber v.6
+# ReportPortal agent for Cucumber v.6 and v.7
 Cucumber JVM version [6.0.0; ) adapter
 
 > **DISCLAIMER**: We use Google Analytics for sending anonymous usage information such as agent's and client's names,
