@@ -15,6 +15,7 @@
  */
 package com.epam.reportportal.cucumber;
 
+import com.epam.reportportal.listeners.ItemType;
 import com.epam.reportportal.utils.MemoizingSupplier;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.cucumber.plugin.event.HookTestStep;
@@ -47,9 +48,9 @@ import java.util.Optional;
  * @author Vadzim Hushchanskou
  */
 public class ScenarioReporter extends AbstractReporter {
-	private static final String RP_STORY_TYPE = "SUITE";
-	private static final String RP_TEST_TYPE = "STORY";
-	private static final String RP_STEP_TYPE = "STEP";
+	private static final String RP_STORY_TYPE = ItemType.SUITE.name();
+	private static final String RP_TEST_TYPE = ItemType.STORY.name();
+	private static final String RP_STEP_TYPE = ItemType.STEP.name();
 	private static final String DUMMY_ROOT_SUITE_NAME = "Root User Story";
 
 	protected MemoizingSupplier<Maybe<String>> rootSuiteId;
