@@ -40,6 +40,7 @@ import io.cucumber.core.gherkin.Feature;
 import io.cucumber.plugin.ConcurrentEventListener;
 import io.cucumber.plugin.event.*;
 import io.reactivex.Maybe;
+import okhttp3.MediaType;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -580,7 +581,15 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 * @param data     data to attach
 	 */
 	protected void embedding(@Nullable String name, @Nullable String mimeType, @Nonnull byte[] data) {
-		String type = ofNullable(mimeType).orElseGet(() -> getDataType(data, name));
+		String type = ofNullable(mimeType).filter(m -> {
+			try {
+				MediaType.get(m);
+				return true;
+			} catch (IllegalArgumentException e) {
+				LOGGER.warn("Incorrect media type '{}'", m);
+				return false;
+			}
+		}).orElseGet(() -> getDataType(data, name));
 		String attachmentName = ofNullable(name).filter(m -> !m.isEmpty())
 				.orElseGet(() -> ofNullable(type).map(t -> t.substring(0, t.indexOf("/"))).orElse(""));
 		ReportPortal.emitLog(new ReportPortalMessage(ByteSource.wrap(data), type, attachmentName),

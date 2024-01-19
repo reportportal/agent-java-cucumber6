@@ -54,42 +54,42 @@ public class EmbeddingTest {
 	@CucumberOptions(features = "src/test/resources/features/embedding/ImageEmbeddingFeature.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.embed.image" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
-	public static class ImageStepReporter extends AbstractTestNGCucumberTests {
+	public static class ImageStepReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
 	@CucumberOptions(features = "src/test/resources/features/embedding/TextEmbeddingFeature.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.embed.text" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
-	public static class TextStepReporter extends AbstractTestNGCucumberTests {
+	public static class TextStepReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
 	@CucumberOptions(features = "src/test/resources/features/embedding/PdfEmbeddingFeature.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.embed.pdf" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
-	public static class PdfStepReporter extends AbstractTestNGCucumberTests {
+	public static class PdfStepReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
 	@CucumberOptions(features = "src/test/resources/features/embedding/ArchiveEmbeddingFeature.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.embed.zip" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
-	public static class ZipStepReporter extends AbstractTestNGCucumberTests {
+	public static class ZipStepReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
 	@CucumberOptions(features = "src/test/resources/features/embedding/EmbedImageWithoutName.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.embed.image" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
-	public static class ImageNoNameStepReporter extends AbstractTestNGCucumberTests {
+	public static class ImageNoNameStepReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
 	@CucumberOptions(features = "src/test/resources/features/embedding/EmbedImageWithEmptyName.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.embed.image" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
-	public static class ImageEmptyNameStepReporter extends AbstractTestNGCucumberTests {
+	public static class ImageEmptyNameStepReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
@@ -129,7 +129,7 @@ public class EmbeddingTest {
 
 	@Test
 	public void verify_image_embedding() {
-		TestUtils.runTests(ImageStepReporter.class);
+		TestUtils.runTests(ImageStepReporterTest.class);
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(client, atLeastOnce()).log(logCaptor.capture());
@@ -138,16 +138,15 @@ public class EmbeddingTest {
 
 		List<String> types = logs.stream()
 				.flatMap(l -> getLogFiles(l.getFile().getName(), logCaptor).stream())
-				.flatMap(f -> ofNullable(f.body().contentType()).map(MediaType::toString).map(Stream::of).orElse(Stream.empty()))
+				.flatMap(f -> ofNullable(f.body().contentType()).map(MediaType::toString).stream())
 				.collect(Collectors.toList());
 		assertThat(types, hasSize(3));
 		assertThat(types, containsInAnyOrder("image/jpeg", "image/png", "image/jpeg"));
-
 	}
 
 	@Test
 	public void verify_text_embedding() {
-		TestUtils.runTests(TextStepReporter.class);
+		TestUtils.runTests(TextStepReporterTest.class);
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(client, atLeastOnce()).log(logCaptor.capture());
@@ -155,7 +154,7 @@ public class EmbeddingTest {
 
 		List<String> types = logs.stream()
 				.flatMap(l -> getLogFiles(l.getFile().getName(), logCaptor).stream())
-				.flatMap(f -> ofNullable(f.body().contentType()).map(MediaType::toString).map(Stream::of).orElse(Stream.empty()))
+				.flatMap(f -> ofNullable(f.body().contentType()).map(MediaType::toString).stream())
 				.collect(Collectors.toList());
 
 		assertThat(types, hasSize(3));
@@ -164,7 +163,7 @@ public class EmbeddingTest {
 
 	@Test
 	public void verify_pfd_embedding() {
-		TestUtils.runTests(PdfStepReporter.class);
+		TestUtils.runTests(PdfStepReporterTest.class);
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(client, atLeastOnce()).log(logCaptor.capture());
@@ -174,7 +173,7 @@ public class EmbeddingTest {
 
 		List<String> types = logs.stream()
 				.flatMap(l -> getLogFiles(l.getFile().getName(), logCaptor).stream())
-				.flatMap(f -> ofNullable(f.body().contentType()).map(MediaType::toString).map(Stream::of).orElse(Stream.empty()))
+				.flatMap(f -> ofNullable(f.body().contentType()).map(MediaType::toString).stream())
 				.collect(Collectors.toList());
 		assertThat(types, hasSize(3));
 		assertThat(types, containsInAnyOrder("application/pdf", "image/png", "application/octet-stream"));
@@ -182,7 +181,7 @@ public class EmbeddingTest {
 
 	@Test
 	public void verify_archive_embedding() {
-		TestUtils.runTests(ZipStepReporter.class);
+		TestUtils.runTests(ZipStepReporterTest.class);
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(client, atLeastOnce()).log(logCaptor.capture());
@@ -190,7 +189,7 @@ public class EmbeddingTest {
 
 		List<String> types = logs.stream()
 				.flatMap(l -> getLogFiles(l.getFile().getName(), logCaptor).stream())
-				.flatMap(f -> ofNullable(f.body().contentType()).map(MediaType::toString).map(Stream::of).orElse(Stream.empty()))
+				.flatMap(f -> ofNullable(f.body().contentType()).map(MediaType::toString).stream())
 				.collect(Collectors.toList());
 		assertThat(types, hasSize(3));
 		assertThat(types, containsInAnyOrder("application/zip", "image/png", "application/octet-stream"));
@@ -198,7 +197,7 @@ public class EmbeddingTest {
 
 	@Test
 	public void verify_image_no_name_embedding() {
-		TestUtils.runTests(ImageNoNameStepReporter.class);
+		TestUtils.runTests(ImageNoNameStepReporterTest.class);
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(client, atLeastOnce()).log(logCaptor.capture());
@@ -208,7 +207,7 @@ public class EmbeddingTest {
 
 		List<String> types = logs.stream()
 				.flatMap(l -> getLogFiles(l.getFile().getName(), logCaptor).stream())
-				.flatMap(f -> ofNullable(f.body().contentType()).map(MediaType::toString).map(Stream::of).orElse(Stream.empty()))
+				.flatMap(f -> ofNullable(f.body().contentType()).map(MediaType::toString).stream())
 				.collect(Collectors.toList());
 		assertThat(types, hasSize(1));
 		assertThat(types, containsInAnyOrder("image/jpeg"));
@@ -216,7 +215,7 @@ public class EmbeddingTest {
 
 	@Test
 	public void verify_image_empty_name_embedding() {
-		TestUtils.runTests(ImageEmptyNameStepReporter.class);
+		TestUtils.runTests(ImageEmptyNameStepReporterTest.class);
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(client, atLeastOnce()).log(logCaptor.capture());
@@ -226,7 +225,7 @@ public class EmbeddingTest {
 
 		List<String> types = logs.stream()
 				.flatMap(l -> getLogFiles(l.getFile().getName(), logCaptor).stream())
-				.flatMap(f -> ofNullable(f.body().contentType()).map(MediaType::toString).map(Stream::of).orElse(Stream.empty()))
+				.flatMap(f -> ofNullable(f.body().contentType()).map(MediaType::toString).stream())
 				.collect(Collectors.toList());
 		assertThat(types, hasSize(1));
 		assertThat(types, containsInAnyOrder("image/jpeg"));
