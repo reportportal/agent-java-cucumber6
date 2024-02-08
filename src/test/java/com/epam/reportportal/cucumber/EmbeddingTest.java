@@ -176,7 +176,7 @@ public class EmbeddingTest {
 				.flatMap(f -> ofNullable(f.body().contentType()).map(MediaType::toString).stream())
 				.collect(Collectors.toList());
 		assertThat(types, hasSize(3));
-		assertThat(types, containsInAnyOrder("application/pdf", "image/png", "application/octet-stream"));
+		assertThat(types, containsInAnyOrder("application/pdf", "image/png", "application/pdf"));
 	}
 
 	@Test
@@ -192,7 +192,7 @@ public class EmbeddingTest {
 				.flatMap(f -> ofNullable(f.body().contentType()).map(MediaType::toString).stream())
 				.collect(Collectors.toList());
 		assertThat(types, hasSize(3));
-		assertThat(types, containsInAnyOrder("application/zip", "image/png", "application/octet-stream"));
+		assertThat(types, containsInAnyOrder("application/zip", "image/png", "application/zip"));
 	}
 
 	@Test
