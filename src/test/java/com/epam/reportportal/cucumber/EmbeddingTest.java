@@ -158,7 +158,7 @@ public class EmbeddingTest {
 				.collect(Collectors.toList());
 
 		assertThat(types, hasSize(3));
-		assertThat(types, containsInAnyOrder("text/plain", "image/png", "application/octet-stream"));
+		assertThat(types, containsInAnyOrder("text/plain", "image/png", "text/plain"));
 	}
 
 	@Test
