@@ -42,8 +42,13 @@ import java.util.concurrent.Executors;
 
 import static com.epam.reportportal.cucumber.integration.util.TestUtils.filterLogs;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.Mockito.*;
 
 /**
@@ -52,6 +57,11 @@ import static org.mockito.Mockito.*;
 public class FailedTest {
 
 	private static final String EXPECTED_ERROR = "java.lang.IllegalStateException: " + FailedSteps.ERROR_MESSAGE;
+	private static final String ERROR_LOG_TEXT = "Error:\n" + EXPECTED_ERROR;
+
+	private static final Pair<String, String> SCENARIO_CODE_REFERENCES_WITH_ERROR = Pair.of("file:///",
+			"/agent-java-cucumber6/src/test/resources/features/FailedScenario.feature\n" + ERROR_LOG_TEXT
+	);
 
 	@CucumberOptions(features = "src/test/resources/features/FailedScenario.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
@@ -135,5 +145,49 @@ public class FailedTest {
 		assertThat(expectedErrorList, hasSize(1));
 		SaveLogRQ expectedError = expectedErrorList.get(0);
 		assertThat(expectedError.getItemUuid(), equalTo(stepId));
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void verify_failed_nested_step_description_scenario_reporter() {
+		TestUtils.runTests(FailedScenarioReporter.class);
+
+		verify(client).startTestItem(any());
+		verify(client).startTestItem(same(suiteId), any());
+		verify(client).startTestItem(same(testId), any());
+		verify(client).startTestItem(same(stepId), any());
+		ArgumentCaptor<FinishTestItemRQ> finishCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(client).finishTestItem(same(nestedStepId), finishCaptor.capture());
+		verify(client).finishTestItem(same(stepId), any());
+		verify(client).finishTestItem(same(testId), finishCaptor.capture());
+
+		List<FinishTestItemRQ> finishRqs = finishCaptor.getAllValues();
+		finishRqs.subList(0, finishRqs.size() - 1).forEach(e -> assertThat(e.getStatus(), equalTo(ItemStatus.FAILED.name())));
+
+		FinishTestItemRQ step = finishRqs.get(0);
+		assertThat(step.getDescription(), not(equalTo(ERROR_LOG_TEXT)));
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void verify_failed_step_description_step_reporter() {
+		TestUtils.runTests(FailedStepReporter.class);
+
+		verify(client).startTestItem(any());
+		verify(client).startTestItem(same(suiteId), any());
+		verify(client).startTestItem(same(testId), any());
+		ArgumentCaptor<FinishTestItemRQ> finishCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(client).finishTestItem(same(stepId), finishCaptor.capture());
+		verify(client).finishTestItem(same(testId), finishCaptor.capture());
+
+		List<FinishTestItemRQ> finishRqs = finishCaptor.getAllValues();
+		finishRqs.forEach(e -> assertThat(e.getStatus(), equalTo(ItemStatus.FAILED.name())));
+
+		FinishTestItemRQ step = finishRqs.get(0);
+		assertThat(step.getDescription(), equalTo(ERROR_LOG_TEXT));
+		FinishTestItemRQ test = finishRqs.get(1);
+		assertThat(test.getDescription(),
+				allOf(notNullValue(), startsWith(SCENARIO_CODE_REFERENCES_WITH_ERROR.getKey()), endsWith(SCENARIO_CODE_REFERENCES_WITH_ERROR.getValue()))
+		);
 	}
 }
