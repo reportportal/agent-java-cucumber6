@@ -42,9 +42,13 @@ import java.util.concurrent.Executors;
 
 import static com.epam.reportportal.cucumber.integration.util.TestUtils.filterLogs;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.Mockito.*;
 
 /**
@@ -54,9 +58,10 @@ public class FailedTest {
 
 	private static final String EXPECTED_ERROR = "java.lang.IllegalStateException: " + FailedSteps.ERROR_MESSAGE;
 	private static final String ERROR_LOG_TEXT = "Error:\n" + EXPECTED_ERROR;
-	private static final String DESCRIPTION_ERROR_LOG_TEXT =
-			"file:///C:/Projects/agent-java-cucumber6/src/test/resources/features/FailedScenario.feature\n"
-					+ ERROR_LOG_TEXT;
+
+	private static final Pair<String, String> SCENARIO_CODE_REFERENCES_WITH_ERROR = Pair.of("file:///",
+			"/agent-java-cucumber6/src/test/resources/features/FailedScenario.feature\n" + ERROR_LOG_TEXT
+	);
 
 	@CucumberOptions(features = "src/test/resources/features/FailedScenario.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
@@ -161,7 +166,6 @@ public class FailedTest {
 
 		FinishTestItemRQ step = finishRqs.get(0);
 		assertThat(step.getDescription(), not(equalTo(ERROR_LOG_TEXT)));
-		assertThat(step.getDescription(), not(equalTo(DESCRIPTION_ERROR_LOG_TEXT)));
 	}
 
 	@Test
@@ -182,6 +186,8 @@ public class FailedTest {
 		FinishTestItemRQ step = finishRqs.get(0);
 		assertThat(step.getDescription(), equalTo(ERROR_LOG_TEXT));
 		FinishTestItemRQ test = finishRqs.get(1);
-		assertThat(test.getDescription(), equalTo(DESCRIPTION_ERROR_LOG_TEXT));
+		assertThat(test.getDescription(),
+				allOf(notNullValue(), startsWith(SCENARIO_CODE_REFERENCES_WITH_ERROR.getKey()), endsWith(SCENARIO_CODE_REFERENCES_WITH_ERROR.getValue()))
+		);
 	}
 }
