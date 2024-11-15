@@ -52,14 +52,14 @@ public class FeatureDescriptionTest {
 	@CucumberOptions(features = "src/test/resources/features/belly.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestScenarioReporter" })
-	public static class BellyScenarioReporter extends AbstractTestNGCucumberTests {
+	public static class BellyScenarioReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
 	@CucumberOptions(features = "src/test/resources/features/belly.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
-	public static class BellyStepReporter extends AbstractTestNGCucumberTests {
+	public static class BellyStepReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
@@ -82,17 +82,19 @@ public class FeatureDescriptionTest {
 		TestStepReporter.RP.set(reportPortal);
 	}
 
-	private static final Pair<String, String> FEATURE_CODE_REFERENCES = Pair.of("file:///",
+	private static final Pair<String, String> FEATURE_CODE_REFERENCES = Pair.of(
+			"file:///",
 			"/agent-java-cucumber6/src/test/resources/features/belly.feature"
 	);
 
-	private static final Pair<String, String> SCENARIO_CODE_REFERENCES = Pair.of("file:///",
+	private static final Pair<String, String> SCENARIO_CODE_REFERENCES = Pair.of(
+			"file:///",
 			"/agent-java-cucumber6/src/test/resources/features/belly.feature"
 	);
 
 	@Test
 	public void verify_code_reference_scenario_reporter() {
-		TestUtils.runTests(BellyScenarioReporter.class);
+		TestUtils.runTests(BellyScenarioReporterTest.class);
 
 		verify(client, times(1)).startTestItem(any());
 		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
@@ -104,17 +106,19 @@ public class FeatureDescriptionTest {
 		StartTestItemRQ feature = items.get(0);
 		StartTestItemRQ scenario = items.get(1);
 
-		assertThat(feature.getDescription(),
+		assertThat(
+				feature.getDescription(),
 				allOf(notNullValue(), startsWith(FEATURE_CODE_REFERENCES.getKey()), endsWith(FEATURE_CODE_REFERENCES.getValue()))
 		);
-		assertThat(scenario.getDescription(),
+		assertThat(
+				scenario.getDescription(),
 				allOf(notNullValue(), startsWith(SCENARIO_CODE_REFERENCES.getKey()), endsWith(SCENARIO_CODE_REFERENCES.getValue()))
 		);
 	}
 
 	@Test
 	public void verify_code_reference_step_reporter() {
-		TestUtils.runTests(BellyStepReporter.class);
+		TestUtils.runTests(BellyStepReporterTest.class);
 
 		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(client, times(1)).startTestItem(captor.capture());
@@ -125,10 +129,12 @@ public class FeatureDescriptionTest {
 		StartTestItemRQ feature = items.get(0);
 		StartTestItemRQ scenario = items.get(1);
 
-		assertThat(feature.getDescription(),
+		assertThat(
+				feature.getDescription(),
 				allOf(notNullValue(), startsWith(FEATURE_CODE_REFERENCES.getKey()), endsWith(FEATURE_CODE_REFERENCES.getValue()))
 		);
-		assertThat(scenario.getDescription(),
+		assertThat(
+				scenario.getDescription(),
 				allOf(notNullValue(), startsWith(SCENARIO_CODE_REFERENCES.getKey()), endsWith(SCENARIO_CODE_REFERENCES.getValue()))
 		);
 	}

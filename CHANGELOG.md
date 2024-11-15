@@ -1,6 +1,12 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- Common Stack Trace frames skip in description and logs, by @HardNorth
+- Reporting of Last Error Log in Item description, by @HardNorth and @ArtemOAS
+### Changed
+- Client version updated on [5.2.21](https://github.com/reportportal/client-java/releases/tag/5.2.21), by @HardNorth
+- Cucumber version updated on 7.20.1, by @HardNorth
 
 ## [5.3.2]
 ### Changed
