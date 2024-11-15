@@ -27,8 +27,8 @@ import com.epam.reportportal.service.item.TestCaseIdEntry;
 import com.epam.reportportal.service.tree.TestItemTree;
 import com.epam.reportportal.utils.*;
 import com.epam.reportportal.utils.files.ByteSource;
+import com.epam.reportportal.utils.formatting.MarkdownUtils;
 import com.epam.reportportal.utils.http.ContentType;
-import com.epam.reportportal.utils.markdown.MarkdownUtils;
 import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
 import com.epam.reportportal.utils.reflect.Accessible;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
@@ -61,9 +61,9 @@ import static com.epam.reportportal.cucumber.Utils.*;
 import static com.epam.reportportal.cucumber.util.ItemTreeUtils.createKey;
 import static com.epam.reportportal.cucumber.util.ItemTreeUtils.retrieveLeaf;
 import static java.lang.String.format;
+import static com.epam.reportportal.utils.formatting.ExceptionUtils.getStackTrace;
 import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
 
 /**
  * Abstract Cucumber 5.x formatter for Report Portal
@@ -583,7 +583,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 			sendLog(message, level);
 		}
 		if (result.getError() != null) {
-			sendLog(getStackTrace(result.getError()), level);
+			sendLog(getStackTrace(result.getError(), new Throwable()), level);
 		}
 	}
 
