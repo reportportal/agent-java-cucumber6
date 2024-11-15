@@ -47,14 +47,14 @@ public class AmbiguousScenarioTest {
 	@CucumberOptions(features = "src/test/resources/features/AmbiguousTest.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
-	public static class SimpleTestStepReporter extends AbstractTestNGCucumberTests {
+	public static class SimpleTestStepReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
 	@CucumberOptions(features = "src/test/resources/features/AmbiguousTest.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestScenarioReporter" })
-	public static class SimpleTestScenarioReporter extends AbstractTestNGCucumberTests {
+	public static class SimpleTestScenarioReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
@@ -81,7 +81,7 @@ public class AmbiguousScenarioTest {
 
 	@Test
 	public void verify_step_reporter_ambiguous_item() {
-		TestUtils.runTests(SimpleTestStepReporter.class);
+		TestUtils.runTests(SimpleTestStepReporterTest.class);
 
 		ArgumentCaptor<StartTestItemRQ> stepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(client, times(1)).startTestItem(same(testId), stepCaptor.capture());
@@ -105,7 +105,7 @@ public class AmbiguousScenarioTest {
 	@Test
 	public void verify_scenario_reporter_ambiguous_item() {
 		TestUtils.mockNestedSteps(client, nestedSteps);
-		TestUtils.runTests(SimpleTestScenarioReporter.class);
+		TestUtils.runTests(SimpleTestScenarioReporterTest.class);
 
 		ArgumentCaptor<StartTestItemRQ> stepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(client, times(1)).startTestItem(same(stepIds.get(0)), stepCaptor.capture());
