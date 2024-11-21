@@ -241,7 +241,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		if (feature.isPresent()) {
 			context.executeWithContext(feature.get());
 		} else {
-			LOGGER.warn("Unable to locate corresponding Feature for URI: " + uri);
+			LOGGER.warn("Unable to locate corresponding Feature for URI: {}", uri);
 		}
 	}
 
@@ -313,7 +313,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 					if (scenario.isPresent()) {
 						context.executeWithContext(f, scenario.get());
 					} else {
-						LOGGER.warn("Unable to locate corresponding Feature or Scenario context for URI: " + uri + "; line: " + line);
+						LOGGER.warn("Unable to locate corresponding Feature or Scenario context for URI: {}; line: {}", uri, line);
 					}
 				}
 		);
@@ -800,7 +800,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 			if (n instanceof Feature) {
 				featureContextMap.put(uri, new FeatureContext(uri, (Feature) n));
 			} else {
-				LOGGER.warn("Unknown node type: " + n.getClass().getSimpleName());
+				LOGGER.warn("Unknown node type: {}", n.getClass().getSimpleName());
 			}
 		});
 	}
@@ -979,10 +979,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 			return null;
 		} else {
 			if (STATUS_MAPPING.get(status) == null) {
-				LOGGER.error(format(
-						"Unable to find direct mapping between Cucumber and ReportPortal for TestItem with status: '%s'.",
-						status
-				));
+				LOGGER.error("Unable to find direct mapping between Cucumber and ReportPortal for TestItem with status: '{}'.", status);
 				return ItemStatus.SKIPPED;
 			}
 			return STATUS_MAPPING.get(status);
@@ -1095,7 +1092,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 				}
 			}
 		} catch (Throwable e) {
-			LOGGER.error("Unable to get java code reference for the Test Step: " + cucumberLocation, e);
+			LOGGER.error("Unable to get java code reference for the Test Step: {}", cucumberLocation, e);
 			return cucumberLocation;
 		}
 		return cucumberLocation;
