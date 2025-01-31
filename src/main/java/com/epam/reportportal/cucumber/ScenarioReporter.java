@@ -19,8 +19,8 @@ import com.epam.reportportal.listeners.ItemType;
 import com.epam.reportportal.utils.MemoizingSupplier;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.cucumber.plugin.event.HookTestStep;
+import io.cucumber.plugin.event.PickleStepTestStep;
 import io.cucumber.plugin.event.TestCase;
-import io.cucumber.plugin.event.TestStep;
 import io.reactivex.Maybe;
 
 import javax.annotation.Nonnull;
@@ -63,14 +63,15 @@ public class ScenarioReporter extends AbstractReporter {
 
 	@Override
 	@Nonnull
-	protected StartTestItemRQ buildStartStepRequest(@Nonnull TestStep testStep, @Nullable String stepPrefix, @Nullable String keyword) {
+	protected StartTestItemRQ buildStartStepRequest(@Nonnull PickleStepTestStep testStep, @Nullable String stepPrefix,
+			@Nullable String keyword) {
 		StartTestItemRQ rq = super.buildStartStepRequest(testStep, stepPrefix, keyword);
 		rq.setHasStats(false);
 		return rq;
 	}
 
 	@Override
-	protected void beforeStep(@Nonnull TestCase testCase, @Nonnull TestStep testStep) {
+	protected void beforeStep(@Nonnull TestCase testCase, @Nonnull PickleStepTestStep testStep) {
 		super.beforeStep(testCase, testStep);
 		String description = buildMultilineArgument(testStep).trim();
 		if (!description.isEmpty()) {

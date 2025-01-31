@@ -45,28 +45,28 @@ public class HooksTest {
 	@CucumberOptions(features = "src/test/resources/features/DummyScenario.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.hooks.step" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
-	public static class StepHooksReporter extends AbstractTestNGCucumberTests {
+	public static class StepHooksReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
 	@CucumberOptions(features = "src/test/resources/features/DummyScenario.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.hooks.scenario" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
-	public static class ScenarioHooksReporter extends AbstractTestNGCucumberTests {
+	public static class ScenarioHooksReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
 	@CucumberOptions(features = "src/test/resources/features/DummyScenario.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.hooks.all" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
-	public static class AllHooksReporter extends AbstractTestNGCucumberTests {
+	public static class AllHooksReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
 	@CucumberOptions(features = "src/test/resources/features/DummyScenario.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
-	public static class NoHooksReporter extends AbstractTestNGCucumberTests {
+	public static class NoHooksReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
@@ -96,7 +96,7 @@ public class HooksTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void verify_before_after_step_reported_in_steps() {
-		TestUtils.runTests(StepHooksReporter.class);
+		TestUtils.runTests(StepHooksReporterTest.class);
 
 		verify(client, times(1)).startTestItem(any());
 		verify(client, times(1)).startTestItem(same(suiteId), any());
@@ -107,7 +107,7 @@ public class HooksTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void verify_before_after_scenario_reported_in_steps() {
-		TestUtils.runTests(ScenarioHooksReporter.class);
+		TestUtils.runTests(ScenarioHooksReporterTest.class);
 
 		verify(client, times(1)).startTestItem(any());
 		verify(client, times(1)).startTestItem(same(suiteId), any());
@@ -118,7 +118,7 @@ public class HooksTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void verify_before_after_all_reported_in_steps() {
-		TestUtils.runTests(AllHooksReporter.class);
+		TestUtils.runTests(AllHooksReporterTest.class);
 
 		verify(client, times(1)).startTestItem(any());
 		verify(client, times(1)).startTestItem(same(suiteId), any());
@@ -131,7 +131,7 @@ public class HooksTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void verify_before_after_not_reported_in_steps() {
-		TestUtils.runTests(NoHooksReporter.class);
+		TestUtils.runTests(NoHooksReporterTest.class);
 
 		verify(client, times(1)).startTestItem(any());
 		verify(client, times(1)).startTestItem(same(suiteId), any());
