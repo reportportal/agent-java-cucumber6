@@ -42,6 +42,7 @@ import io.cucumber.plugin.ConcurrentEventListener;
 import io.cucumber.plugin.event.*;
 import io.reactivex.Maybe;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -577,8 +578,13 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		if (message != null) {
 			sendLog(message, level);
 		}
-		if (result.getError() != null) {
-			sendLog(getStackTrace(result.getError(), new Throwable()), level);
+		Throwable error = result.getError();
+		if (error != null) {
+			sendLog(
+					getReportPortal().getParameters().isExceptionTruncate() ?
+							getStackTrace(error, new Throwable()) :
+							ExceptionUtils.getStackTrace(error), level
+			);
 		}
 	}
 
@@ -929,7 +935,9 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 * @return Description with error
 	 */
 	private String resolveDescriptionErrorMessage(String currentDescription, Throwable error) {
-		String errorStr = format(ERROR_FORMAT, getStackTrace(error, new Throwable()));
+		String errorStr = getReportPortal().getParameters().isExceptionTruncate() ?
+				format(ERROR_FORMAT, getStackTrace(error, new Throwable())) :
+				format(ERROR_FORMAT, ExceptionUtils.getStackTrace(error));
 		return Optional.ofNullable(currentDescription)
 				.filter(StringUtils::isNotBlank)
 				.map(description -> MarkdownUtils.asTwoParts(currentDescription, errorStr))
