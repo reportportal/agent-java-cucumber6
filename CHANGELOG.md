@@ -4,7 +4,7 @@
 ### Added
 - Ability to disable common Stack Trace frames skip in description and logs, by @HardNorth
 ### Changed
-- Client version updated on [5.2.25](https://github.com/reportportal/client-java/releases/tag/5.2.27), by @HardNorth
+- Client version updated on [5.2.29](https://github.com/reportportal/client-java/releases/tag/5.2.29), by @HardNorth
 
 ## [5.3.5]
 ### Changed

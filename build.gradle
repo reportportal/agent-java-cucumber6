@@ -39,7 +39,7 @@ repositories {
 }
 
 dependencies {
-    api 'com.epam.reportportal:client-java:5.2.27'
+    api 'com.epam.reportportal:client-java:5.2.29'
 
     implementation "io.cucumber:cucumber-gherkin:${project.cucumber_version}"
     implementation 'org.slf4j:slf4j-api:2.0.7'
