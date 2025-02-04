@@ -23,7 +23,7 @@ import io.reactivex.Maybe;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.net.URI;
-import java.util.Optional;
+import java.util.*;
 
 import static java.util.Optional.ofNullable;
 
@@ -35,10 +35,10 @@ public class ScenarioContext {
 	private final Node.Scenario scenario;
 	private final Node.ScenarioOutline scenarioOutline;
 	private final Node.Example example;
+	private final Deque<CachedStep> cachedHooks = new LinkedList<>();
 
 	private TestCase testCase;
 	private Maybe<String> id = Maybe.empty();
-	private Maybe<String> hookId = Maybe.empty();
 	private Maybe<String> stepId = Maybe.empty();
 
 	public ScenarioContext(@Nonnull URI scenarioFilePath, @Nullable RuleContext ruleNode, @Nonnull Node.Scenario scenarioNode) {
@@ -93,13 +93,20 @@ public class ScenarioContext {
 		this.id = id;
 	}
 
-	public void setHookId(@Nonnull Maybe<String> hookStepId) {
-		hookId = hookStepId;
+	public void addCachedHook(@Nonnull CachedStep hook) {
+		cachedHooks.add(hook);
 	}
 
 	@Nonnull
-	public Maybe<String> getHookId() {
-		return hookId;
+	public Deque<CachedStep> getCachedHooks() {
+		return new LinkedList<>(cachedHooks);
+	}
+
+	@Nonnull
+	public Deque<CachedStep> clearCachedHooks() {
+		Deque<CachedStep> hooks = getCachedHooks();
+		cachedHooks.clear();
+		return hooks;
 	}
 
 	public void setStepId(@Nonnull Maybe<String> currentStepId) {

@@ -334,6 +334,8 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		TestCase testCase = event.getTestCase();
 		execute(
 				testCase, (f, s) -> {
+					postStepHooks(event.getTestCase(), "After");
+					s.setStepId(Maybe.empty());
 					URI featureUri = f.getUri();
 					if (mapItemStatus(event.getResult().getStatus()) == ItemStatus.FAILED) {
 						Optional.ofNullable(event.getResult().getError()).ifPresent(error -> errorMap.put(s.getId(), error));
@@ -431,6 +433,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	protected void beforeStep(@Nonnull TestCase testCase, @Nonnull PickleStepTestStep step) {
 		execute(
 				testCase, (f, s) -> {
+					postStepHooks(testCase, "Before");
 					String stepPrefix = step.getStep().getLocation().getLine() < s.getLine() ? BACKGROUND_PREFIX : null;
 					StartTestItemRQ rq = buildStartStepRequest(step, stepPrefix, step.getStep().getKeyword());
 					Maybe<String> stepId = startStep(s.getId(), rq);
@@ -457,12 +460,18 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	protected void afterStep(@Nonnull TestCase testCase, @Nonnull PickleStepTestStep testStep, @Nonnull Result result) {
 		execute(
 				testCase, (f, s) -> {
-					reportResult(result, null);
-					if (mapItemStatus(result.getStatus()) == ItemStatus.FAILED) {
-						Optional.ofNullable(result.getError()).ifPresent(error -> errorMap.put(s.getStepId(), error));
+					String level = mapLevel(result.getStatus());
+					Throwable error = result.getError();
+					if (error != null) {
+						sendLog(
+								getReportPortal().getParameters().isExceptionTruncate() ?
+										getStackTrace(error, new Throwable()) :
+										ExceptionUtils.getStackTrace(error), level
+						);
+						errorMap.put(s.getStepId(), error);
 					}
-					finishTestItem(s.getStepId(), mapItemStatus(result.getStatus()), null);
-					s.setStepId(Maybe.empty());
+					ItemStatus status = mapItemStatus(result.getStatus());
+					finishTestItem(s.getStepId(), status, null);
 				}
 		);
 	}
@@ -497,13 +506,29 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 * @return Request to ReportPortal
 	 */
 	@Nonnull
-	@SuppressWarnings("unused")
 	protected StartTestItemRQ buildStartHookRequest(@Nonnull TestCase testCase, @Nonnull HookTestStep testStep) {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		Pair<String, String> typeName = getHookTypeAndName(testStep.getHookType());
 		rq.setType(typeName.getKey());
 		rq.setName(typeName.getValue());
 		rq.setStartTime(Calendar.getInstance().getTime());
+		return rq;
+	}
+
+	/**
+	 * Extension point to customize test creation event/request
+	 *
+	 * @param testCase Cucumber's TestCase object
+	 * @param hookType type of the hook which will be used in the name
+	 * @return Request to ReportPortal
+	 */
+	@SuppressWarnings("unused")
+	protected StartTestItemRQ buildHookGroupRequest(@Nonnull TestCase testCase, @Nonnull String hookType) {
+		StartTestItemRQ rq = new StartTestItemRQ();
+		rq.setName(hookType + " hooks");
+		rq.setStartTime(Calendar.getInstance().getTime());
+		rq.setType(ItemType.STEP.name());
+		rq.setHasStats(false);
 		return rq;
 	}
 
@@ -520,6 +545,47 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	}
 
 	/**
+	 * Finish cached before/after-hook items on Report Portal
+	 *
+	 * @param testCase Cucumber's TestCase object
+	 * @param hookType type of the hook which will be used in the name
+	 */
+	protected void postStepHooks(@Nonnull TestCase testCase, @Nonnull String hookType) {
+		execute(
+				testCase, (f, s) -> {
+					Deque<CachedStep> hooks = s.clearCachedHooks();
+					if (hooks.isEmpty()) {
+						return;
+					}
+					final Maybe<String> parentId;
+					final Maybe<String> stepId = s.getStepId();
+					if (hooks.size() > 1) {
+						StartTestItemRQ rq = buildHookGroupRequest(testCase, hookType);
+						parentId = startHook(stepId, rq);
+					} else {
+						parentId = stepId;
+					}
+
+					Launch myLaunch = getLaunch();
+					hooks.forEach(h -> {
+						Maybe<String> itemId = myLaunch.startTestItem(parentId, h.getStartTestItemRQ());
+						h.getLogs()
+								.forEach(l -> ReportPortal.emitLog(
+										itemId,
+										itemUuid -> ReportPortal.toSaveLogRQ(null, itemUuid, l.getLevel(), l.getTime(), l.getMessage())
+								));
+						//noinspection ReactiveStreamsUnusedPublisher
+						myLaunch.finishTestItem(itemId, h.getFinishTestItemRQ());
+					});
+
+					if (parentId != s.getStepId()) {
+						finishTestItem(parentId);
+					}
+				}
+		);
+	}
+
+	/**
 	 * Called when before/after-hooks are started
 	 *
 	 * @param testCase a Cucumber's TestCase object
@@ -529,9 +595,16 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		execute(
 				testCase, (f, s) -> {
 					StartTestItemRQ rq = buildStartHookRequest(testCase, testStep);
-					s.setHookId(startHook(s.getId(), rq));
+					s.addCachedHook(new CachedStep(rq));
 				}
 		);
+	}
+
+	protected FinishTestItemRQ buildFinishHookRequest(@Nullable ItemStatus status) {
+		FinishTestItemRQ rq = new FinishTestItemRQ();
+		rq.setStatus(ofNullable(status).map(ItemStatus::name).orElse(null));
+		rq.setEndTime(Calendar.getInstance().getTime());
+		return rq;
 	}
 
 	/**
@@ -544,9 +617,20 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	protected void afterHooks(@Nonnull TestCase testCase, @Nonnull HookTestStep step, Result result) {
 		execute(
 				testCase, (f, s) -> {
-					reportResult(result, (isBefore(step) ? "Before" : "After") + " hook: " + step.getCodeLocation());
-					finishTestItem(s.getHookId(), mapItemStatus(result.getStatus()));
-					s.setHookId(Maybe.empty());
+					String level = mapLevel(result.getStatus());
+					CachedStep hook = s.getCachedHooks().getLast();
+					hook.addLog(new CachedLog(
+							new ReportPortalMessage((isBefore(step) ? "Before" : "After") + " hook: " + step.getCodeLocation()),
+							level,
+							Calendar.getInstance().getTime()
+					));
+					Throwable error = result.getError();
+					hook.addLog(new CachedLog(
+							new ReportPortalMessage(getReportPortal().getParameters().isExceptionTruncate() ?
+									getStackTrace(error, new Throwable()) :
+									ExceptionUtils.getStackTrace(error)), level, Calendar.getInstance().getTime()
+					));
+					hook.setFinishTestItemRQ(buildFinishHookRequest(mapItemStatus(result.getStatus())));
 				}
 		);
 	}
@@ -566,27 +650,6 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 */
 	@Nonnull
 	protected abstract String getScenarioTestItemType();
-
-	/**
-	 * Report test item result and error (if present)
-	 *
-	 * @param result  - Cucumber result object
-	 * @param message - optional message to be logged in addition
-	 */
-	protected void reportResult(@Nonnull Result result, @Nullable String message) {
-		String level = mapLevel(result.getStatus());
-		if (message != null) {
-			sendLog(message, level);
-		}
-		Throwable error = result.getError();
-		if (error != null) {
-			sendLog(
-					getReportPortal().getParameters().isExceptionTruncate() ?
-							getStackTrace(error, new Throwable()) :
-							ExceptionUtils.getStackTrace(error), level
-			);
-		}
-	}
 
 	@Nullable
 	private static String getDataType(@Nonnull byte[] data, @Nullable String name) {
@@ -952,11 +1015,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 * @param dateTime a date and time object to use as feature end time
 	 * @return a date and time object of the finish event
 	 */
-	protected Date finishTestItem(@Nullable Maybe<String> itemId, @Nullable ItemStatus status, @Nullable Date dateTime) {
-		if (itemId == null) {
-			LOGGER.error("BUG: Trying to finish unspecified test item.");
-			return null;
-		}
+	protected Date finishTestItem(@Nonnull Maybe<String> itemId, @Nullable ItemStatus status, @Nullable Date dateTime) {
 		Date endTime = ofNullable(dateTime).orElse(Calendar.getInstance().getTime());
 		FinishTestItemRQ rq = buildFinishTestItemRequest(itemId, endTime, status);
 		//noinspection ReactiveStreamsUnusedPublisher
@@ -989,7 +1048,8 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 * @param itemId an ID of the item
 	 * @param status the status of the item
 	 */
-	protected void finishTestItem(@Nullable Maybe<String> itemId, @Nullable ItemStatus status) {
+	@SuppressWarnings("SameParameterValue")
+	protected void finishTestItem(@Nonnull Maybe<String> itemId, @Nullable ItemStatus status) {
 		finishTestItem(itemId, status, null);
 	}
 
@@ -998,7 +1058,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 *
 	 * @param itemId an ID of the item
 	 */
-	protected void finishTestItem(@Nullable Maybe<String> itemId) {
+	protected void finishTestItem(@Nonnull Maybe<String> itemId) {
 		finishTestItem(itemId, null);
 	}
 
