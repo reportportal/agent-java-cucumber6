@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.3.6]
 ### Added
 - Ability to disable common Stack Trace frames skip in description and logs, by @HardNorth
 ### Changed
