@@ -42,6 +42,7 @@ import io.cucumber.plugin.ConcurrentEventListener;
 import io.cucumber.plugin.event.*;
 import io.reactivex.Maybe;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,7 +86,6 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 
 	protected static final URI WORKING_DIRECTORY = new File(System.getProperty("user.dir")).toURI();
 	protected static final String METHOD_OPENING_BRACKET = "(";
-	protected static final String HOOK_ = "Hook: ";
 	protected static final String DOCSTRING_DECORATOR = "\n\"\"\"\n";
 	private static final String ERROR_FORMAT = "Error:\n%s";
 
@@ -346,16 +346,14 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	}
 
 	/**
-	 * Generate a step name based on its type (Before Hook / Regular / etc.)
+	 * Generate a step name.
 	 *
 	 * @param testStep Cucumber's TestStep object
 	 * @return a step name
 	 */
 	@Nullable
-	protected String getStepName(@Nonnull TestStep testStep) {
-		return testStep instanceof HookTestStep ?
-				HOOK_ + ((HookTestStep) testStep).getHookType().toString() :
-				((PickleStepTestStep) testStep).getStep().getText();
+	protected String getStepName(@Nonnull PickleStepTestStep testStep) {
+		return testStep.getStep().getText();
 	}
 
 	/**
@@ -392,7 +390,8 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 * @return a Request to ReportPortal
 	 */
 	@Nonnull
-	protected StartTestItemRQ buildStartStepRequest(@Nonnull TestStep testStep, @Nullable String stepPrefix, @Nullable String keyword) {
+	protected StartTestItemRQ buildStartStepRequest(@Nonnull PickleStepTestStep testStep, @Nullable String stepPrefix,
+			@Nullable String keyword) {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		rq.setName(Utils.buildName(stepPrefix, keyword, getStepName(testStep)));
 		rq.setDescription(buildMultilineArgument(testStep));
@@ -427,24 +426,21 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 * Start Cucumber step
 	 *
 	 * @param testCase Cucumber's TestCase object
-	 * @param testStep a cucumber step object
+	 * @param step     a cucumber step object
 	 */
-	protected void beforeStep(@Nonnull TestCase testCase, @Nonnull TestStep testStep) {
+	protected void beforeStep(@Nonnull TestCase testCase, @Nonnull PickleStepTestStep step) {
 		execute(
 				testCase, (f, s) -> {
-					if (testStep instanceof PickleStepTestStep) {
-						PickleStepTestStep step = (PickleStepTestStep) testStep;
-						String stepPrefix = step.getStep().getLocation().getLine() < s.getLine() ? BACKGROUND_PREFIX : null;
-						StartTestItemRQ rq = buildStartStepRequest(testStep, stepPrefix, step.getStep().getKeyword());
-						Maybe<String> stepId = startStep(s.getId(), rq);
-						if (rq.isHasStats()) {
-							descriptionsMap.put(stepId, ofNullable(rq.getDescription()).orElse(StringUtils.EMPTY));
-						}
-						s.setStepId(stepId);
-						String stepText = step.getStep().getText();
-						if (getLaunch().getParameters().isCallbackReportingEnabled()) {
-							addToTree(testCase, stepText, stepId);
-						}
+					String stepPrefix = step.getStep().getLocation().getLine() < s.getLine() ? BACKGROUND_PREFIX : null;
+					StartTestItemRQ rq = buildStartStepRequest(step, stepPrefix, step.getStep().getKeyword());
+					Maybe<String> stepId = startStep(s.getId(), rq);
+					if (rq.isHasStats()) {
+						descriptionsMap.put(stepId, ofNullable(rq.getDescription()).orElse(StringUtils.EMPTY));
+					}
+					s.setStepId(stepId);
+					String stepText = step.getStep().getText();
+					if (getLaunch().getParameters().isCallbackReportingEnabled()) {
+						addToTree(testCase, stepText, stepId);
 					}
 				}
 		);
@@ -458,7 +454,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 * @param result   Step result
 	 */
 	@SuppressWarnings("unused")
-	protected void afterStep(@Nonnull TestCase testCase, @Nonnull TestStep testStep, @Nonnull Result result) {
+	protected void afterStep(@Nonnull TestCase testCase, @Nonnull PickleStepTestStep testStep, @Nonnull Result result) {
 		execute(
 				testCase, (f, s) -> {
 					reportResult(result, null);
@@ -538,11 +534,6 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		);
 	}
 
-	private void removeFromTree(TestCase testCase, String text) {
-		retrieveLeaf(testCase.getUri(), testCase.getLocation().getLine(), itemTree).ifPresent(scenarioLeaf -> scenarioLeaf.getChildItems()
-				.remove(createKey(text)));
-	}
-
 	/**
 	 * Called when before/after-hooks are finished
 	 *
@@ -556,11 +547,6 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 					reportResult(result, (isBefore(step) ? "Before" : "After") + " hook: " + step.getCodeLocation());
 					finishTestItem(s.getHookId(), mapItemStatus(result.getStatus()));
 					s.setHookId(Maybe.empty());
-					if (step.getHookType() == HookType.AFTER_STEP) {
-						if (step instanceof PickleStepTestStep) {
-							removeFromTree(testCase, ((PickleStepTestStep) step).getStep().getText());
-						}
-					}
 				}
 		);
 	}
@@ -592,8 +578,13 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		if (message != null) {
 			sendLog(message, level);
 		}
-		if (result.getError() != null) {
-			sendLog(getStackTrace(result.getError(), new Throwable()), level);
+		Throwable error = result.getError();
+		if (error != null) {
+			sendLog(
+					getReportPortal().getParameters().isExceptionTruncate() ?
+							getStackTrace(error, new Throwable()) :
+							ExceptionUtils.getStackTrace(error), level
+			);
 		}
 	}
 
@@ -892,18 +883,22 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		TestCase testCase = event.getTestCase();
 		if (testStep instanceof HookTestStep) {
 			beforeHooks(testCase, (HookTestStep) testStep);
+		} else if (testStep instanceof PickleStepTestStep) {
+			beforeStep(testCase, (PickleStepTestStep) testStep);
 		} else {
-			beforeStep(testCase, testStep);
+			LOGGER.warn("Unable to start unknown step type: {}", testStep.getClass().getSimpleName());
 		}
 	}
 
 	protected void handleTestStepFinished(@Nonnull TestStepFinished event) {
-		if (event.getTestStep() instanceof HookTestStep) {
-			TestCase testCase = event.getTestCase();
-			HookTestStep hookTestStep = (HookTestStep) event.getTestStep();
-			afterHooks(testCase, hookTestStep, event.getResult());
+		TestStep testStep = event.getTestStep();
+		TestCase testCase = event.getTestCase();
+		if (testStep instanceof HookTestStep) {
+			afterHooks(testCase, (HookTestStep) testStep, event.getResult());
+		} else if (testStep instanceof PickleStepTestStep) {
+			afterStep(testCase, (PickleStepTestStep) testStep, event.getResult());
 		} else {
-			afterStep(event.getTestCase(), event.getTestStep(), event.getResult());
+			LOGGER.warn("Unable to finish unknown step type: {}", testStep.getClass().getSimpleName());
 		}
 	}
 
@@ -940,7 +935,9 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	 * @return Description with error
 	 */
 	private String resolveDescriptionErrorMessage(String currentDescription, Throwable error) {
-		String errorStr = format(ERROR_FORMAT, getStackTrace(error, new Throwable()));
+		String errorStr = getReportPortal().getParameters().isExceptionTruncate() ?
+				format(ERROR_FORMAT, getStackTrace(error, new Throwable())) :
+				format(ERROR_FORMAT, ExceptionUtils.getStackTrace(error));
 		return Optional.ofNullable(currentDescription)
 				.filter(StringUtils::isNotBlank)
 				.map(description -> MarkdownUtils.asTwoParts(currentDescription, errorStr))
