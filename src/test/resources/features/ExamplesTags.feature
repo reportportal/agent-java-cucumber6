@@ -1,5 +1,6 @@
 Feature: Basic test with parameters
 
+  @test2
   Scenario Outline: Test with different parameters
     Given It is test with parameters
     When I have parameter <str>

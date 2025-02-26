@@ -49,7 +49,7 @@ public class ExamplesAttributeReportingTest {
 	@CucumberOptions(features = "src/test/resources/features/ExamplesTags.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
-	public static class ExamplesStepReporter extends AbstractTestNGCucumberTests {
+	public static class ExamplesStepReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
@@ -74,7 +74,8 @@ public class ExamplesAttributeReportingTest {
 	// Do not add iteration indexes / numbers, since it breaks re-runs
 	@Test
 	public void verify_examples_attributes() {
-		TestUtils.runTests(ExamplesStepReporter.class);
+		TestUtils.mockLogging(client);
+		TestUtils.runTests(ExamplesStepReporterTest.class);
 
 		ArgumentCaptor<StartTestItemRQ> suiteCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(client).startTestItem(suiteCaptor.capture());
@@ -83,10 +84,13 @@ public class ExamplesAttributeReportingTest {
 		ArgumentCaptor<StartTestItemRQ> testCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(client, times(3)).startTestItem(same(suiteId), testCaptor.capture());
 		testCaptor.getAllValues().stream().map(StartTestItemRQ::getAttributes).forEach(a -> {
-			assertThat(a, anyOf(nullValue(), hasSize(1)));
+			assertThat(a, anyOf(nullValue(), hasSize(2)));
 			ItemAttributesRQ attribute = a.iterator().next();
 			assertThat(attribute.getKey(), nullValue());
-			assertThat(attribute.getValue(), equalTo("@test"));
+			assertThat(attribute.getValue(), anyOf(equalTo("@test"), equalTo("@test2")));
+			attribute = a.iterator().next();
+			assertThat(attribute.getKey(), nullValue());
+			assertThat(attribute.getValue(), anyOf(equalTo("@test"), equalTo("@test2")));
 		});
 
 		testIds.forEach(id -> {
