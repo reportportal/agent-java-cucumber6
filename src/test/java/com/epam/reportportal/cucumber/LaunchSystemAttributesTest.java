@@ -18,11 +18,11 @@ package com.epam.reportportal.cucumber;
 
 import com.epam.reportportal.cucumber.integration.util.TestUtils;
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
+import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
 import io.reactivex.Maybe;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,7 +68,7 @@ public class LaunchSystemAttributesTest {
 	public void initLaunch() {
 		MockitoAnnotations.initMocks(this);
 		ListenerParameters listenerParameters = TestUtils.standardParameters();
-		stepReporter = new StepReporter(){
+		stepReporter = new StepReporter() {
 			@Override
 			@Nonnull
 			public ReportPortal getReportPortal() {
@@ -86,7 +86,8 @@ public class LaunchSystemAttributesTest {
 	@Test
 	public void shouldRetrieveSystemAttributes() {
 		when(reportPortalClient.startLaunch(any(StartLaunchRQ.class))).then(t -> Maybe.create(emitter -> {
-			emitter.onSuccess("launchId");
+			StartLaunchRS rs = new StartLaunchRS("launchId", 1L);
+			emitter.onSuccess(rs);
 			emitter.onComplete();
 		}).cache());
 
