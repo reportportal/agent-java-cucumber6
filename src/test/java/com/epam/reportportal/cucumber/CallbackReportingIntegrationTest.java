@@ -79,6 +79,7 @@ public class CallbackReportingIntegrationTest {
 	@BeforeEach
 	public void setup() {
 		TestUtils.mockLaunch(client, launchId, suiteId, tests);
+		TestUtils.mockLogging(client);
 		TestScenarioReporter.addReportPortal(reportPortal);
 		TestScenarioReporter.RP.set(reportPortal);
 		TestStepReporter.addReportPortal(reportPortal);
