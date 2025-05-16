@@ -1,7 +1,8 @@
 # Changelog
 ## [Unreleased]
 ### Changed
-- Client version updated on [5.2.31](https://github.com/reportportal/client-java/releases/tag/5.2.31), by @HardNorth
+- Embedded data attachment level changed to "INFO", by @HardNorth
+- Client version updated on [5.3.11](https://github.com/reportportal/client-java/releases/tag/5.3.11), by @HardNorth
 
 ## [5.3.6]
 ### Added
