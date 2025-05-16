@@ -18,7 +18,6 @@ package com.epam.reportportal.cucumber;
 
 import com.epam.reportportal.cucumber.integration.util.TestUtils;
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
@@ -69,7 +68,7 @@ public class LaunchSystemAttributesTest {
 	public void initLaunch() {
 		MockitoAnnotations.initMocks(this);
 		ListenerParameters listenerParameters = TestUtils.standardParameters();
-		stepReporter = new StepReporter(){
+		stepReporter = new StepReporter() {
 			@Override
 			@Nonnull
 			public ReportPortal getReportPortal() {
