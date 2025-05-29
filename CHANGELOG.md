@@ -56,7 +56,7 @@
 - Client version updated on [5.1.22](https://github.com/reportportal/client-java/releases/tag/5.1.22), by @HardNorth
 - Cucumber version updated on 7.13.0, by @HardNorth
 ### Removed
-- Java 8 support, by @HardNorth
+- Java 8, 9, 10 support, by @HardNorth
 
 ## [5.1.3]
 ### Changed
