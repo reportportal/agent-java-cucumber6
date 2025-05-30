@@ -1,5 +1,7 @@
 # Changelog
 ## [Unreleased]
+
+## [5.4.2]
 ### Changed
 - Hook names now contain code references, by @HardNorth
 ### Removed
