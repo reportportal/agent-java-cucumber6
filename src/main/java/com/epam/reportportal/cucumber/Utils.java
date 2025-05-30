@@ -50,16 +50,6 @@ public class Utils {
 			Status.UNDEFINED, ItemStatus.SKIPPED,
 			Status.UNUSED, ItemStatus.SKIPPED
 	);
-
-	public static final Map<Status, String> LOG_LEVEL_MAPPING = Map.of(
-			Status.PASSED, "INFO",
-			Status.FAILED, "ERROR",
-			Status.SKIPPED, "WARN",
-			Status.PENDING, "WARN",
-			Status.AMBIGUOUS, "WARN",
-			Status.UNDEFINED, "WARN",
-			Status.UNUSED, "WARN"
-	);
 	//@formatter:on
 
 	/**

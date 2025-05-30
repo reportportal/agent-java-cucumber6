@@ -1,9 +1,13 @@
 # Changelog
 ## [Unreleased]
+### Changed
+- Hook names now contain code references, by @HardNorth
+### Removed
+- Logging of hook code reference with ERROR level on hook failure, since it pollutes the logs for Auto-Analysis, by @HardNorth
 
 ## [5.4.1]
 ### Changed
-- Client version updated on [5.3.11](https://github.com/reportportal/client-java/releases/tag/5.3.11), by @HardNorth
+- Client version updated on [5.3.12](https://github.com/reportportal/client-java/releases/tag/5.3.12), by @HardNorth
 
 ## [5.4.0]
 ### Changed
@@ -56,7 +60,7 @@
 - Client version updated on [5.1.22](https://github.com/reportportal/client-java/releases/tag/5.1.22), by @HardNorth
 - Cucumber version updated on 7.13.0, by @HardNorth
 ### Removed
-- Java 8 support, by @HardNorth
+- Java 8, 9, 10 support, by @HardNorth
 
 ## [5.1.3]
 ### Changed
