@@ -1,5 +1,7 @@
 # Changelog
 ## [Unreleased]
+### Changed
+- Hook names now contain code references, by @HardNorth
 ### Removed
 - Logging of hook code reference with ERROR level on hook failure, since it pollutes the logs for Auto-Analysis, by @HardNorth
 

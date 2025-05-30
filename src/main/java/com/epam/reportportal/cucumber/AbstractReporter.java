@@ -478,13 +478,13 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 	protected Pair<String, String> getHookTypeAndName(@Nonnull HookType hookType) {
 		switch (hookType) {
 			case BEFORE:
-				return Pair.of(ItemType.BEFORE_TEST.name(), "Before hooks");
-			case AFTER:
-				return Pair.of(ItemType.AFTER_TEST.name(), "After hooks");
-			case AFTER_STEP:
-				return Pair.of(ItemType.AFTER_METHOD.name(), "After step");
+				return Pair.of(ItemType.BEFORE_TEST.name(), "Before hook");
 			case BEFORE_STEP:
 				return Pair.of(ItemType.BEFORE_METHOD.name(), "Before step");
+			case AFTER:
+				return Pair.of(ItemType.AFTER_TEST.name(), "After hook");
+			case AFTER_STEP:
+				return Pair.of(ItemType.AFTER_METHOD.name(), "After step");
 			default:
 				return Pair.of(ItemType.TEST.name(), "Hook");
 		}
@@ -503,7 +503,7 @@ public abstract class AbstractReporter implements ConcurrentEventListener {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		Pair<String, String> typeName = getHookTypeAndName(testStep.getHookType());
 		rq.setType(typeName.getKey());
-		rq.setName(typeName.getValue());
+		rq.setName(String.format("%s: %s", typeName.getValue(), testStep.getCodeLocation()));
 		rq.setStartTime(Calendar.getInstance().getTime());
 		return rq;
 	}
