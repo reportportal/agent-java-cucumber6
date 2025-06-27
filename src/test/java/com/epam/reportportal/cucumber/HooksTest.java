@@ -45,7 +45,6 @@ import java.util.stream.Stream;
 import static com.epam.reportportal.cucumber.integration.util.TestUtils.filterLogs;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.hamcrest.Matchers.contains;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.any;
 
@@ -195,8 +194,7 @@ public class HooksTest {
 		verify(client).finishTestItem(eq(stepIds.get(5)), stepsFinishCaptor.capture());
 		List<FinishTestItemRQ> finishSteps = stepsFinishCaptor.getAllValues();
 		assertThat(
-				finishSteps.stream().map(FinishExecutionRQ::getStatus).collect(Collectors.toList()),
-				containsInAnyOrder(
+				finishSteps.stream().map(FinishExecutionRQ::getStatus).collect(Collectors.toList()), containsInAnyOrder(
 						ItemStatus.SKIPPED.name(),
 						ItemStatus.SKIPPED.name(),
 						ItemStatus.PASSED.name(),
