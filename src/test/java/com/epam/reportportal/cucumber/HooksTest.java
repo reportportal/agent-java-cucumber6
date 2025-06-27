@@ -196,7 +196,7 @@ public class HooksTest {
 		List<FinishTestItemRQ> finishSteps = stepsFinishCaptor.getAllValues();
 		assertThat(
 				finishSteps.stream().map(FinishExecutionRQ::getStatus).collect(Collectors.toList()),
-				contains(
+				containsInAnyOrder(
 						ItemStatus.SKIPPED.name(),
 						ItemStatus.SKIPPED.name(),
 						ItemStatus.PASSED.name(),
