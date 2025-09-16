@@ -51,7 +51,7 @@ public class NestedStepsScenarioReporterTest {
 	@CucumberOptions(features = "src/test/resources/features/NestedStepsFeature.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestScenarioReporter" })
-	public static class NestedStepsScenarioReporter extends AbstractTestNGCucumberTests {
+	public static class NestedStepsTest extends AbstractTestNGCucumberTests {
 
 	}
 
@@ -84,6 +84,7 @@ public class NestedStepsScenarioReporterTest {
 	@BeforeEach
 	public void setup() {
 		TestUtils.mockLaunch(client, launchId, suiteId, testId, stepId);
+		TestUtils.mockLogging(client);
 		TestUtils.mockNestedSteps(client, firstLevelNestedStepIds);
 		TestUtils.mockNestedSteps(client, secondLevelNestedStepIds);
 		TestUtils.mockNestedSteps(client, Pair.of(nestedNestedStepIds.get(0), nestedNestedNestedStepId));
@@ -105,7 +106,7 @@ public class NestedStepsScenarioReporterTest {
 
 	@Test
 	public void test_scenario_reporter_nested_steps() {
-		TestUtils.runTests(NestedStepsScenarioReporter.class);
+		TestUtils.runTests(NestedStepsTest.class);
 
 		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(client, times(1)).startTestItem(captor.capture());

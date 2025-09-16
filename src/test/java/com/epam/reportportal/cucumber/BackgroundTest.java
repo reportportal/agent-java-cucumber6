@@ -55,14 +55,14 @@ public class BackgroundTest {
 	@CucumberOptions(features = "src/test/resources/features/BackgroundScenario.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
-	public static class MyStepReporter extends AbstractTestNGCucumberTests {
+	public static class MyStepReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
 	@CucumberOptions(features = "src/test/resources/features/BackgroundScenario.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestScenarioReporter" })
-	public static class MyScenarioReporter extends AbstractTestNGCucumberTests {
+	public static class MyScenarioReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
@@ -107,7 +107,7 @@ public class BackgroundTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void verify_background_step_reporter() {
-		runTests(MyStepReporter.class);
+		runTests(MyStepReporterTest.class);
 
 		verify(client, times(1)).startTestItem(any());
 		verify(client, times(2)).startTestItem(same(suiteId), any());
@@ -115,7 +115,7 @@ public class BackgroundTest {
 		verify(client, times(2)).startTestItem(same(testIds.get(0)), firstStepStarts.capture());
 		ArgumentCaptor<StartTestItemRQ> secondStepStarts = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(client, times(2)).startTestItem(same(testIds.get(1)), secondStepStarts.capture());
-		verify(client, times(4)).log(any(List.class));
+		verify(client, times(5)).log(any(List.class));
 
 		assertThat(firstStepStarts.getAllValues()
 				.stream()
@@ -147,7 +147,7 @@ public class BackgroundTest {
 	@SuppressWarnings("unchecked")
 	public void verify_background_scenario_reporter() {
 		mockNestedSteps(client, nestedSteps);
-		runTests(MyScenarioReporter.class);
+		runTests(MyScenarioReporterTest.class);
 
 		verify(client, times(1)).startTestItem(any());
 		verify(client, times(1)).startTestItem(same(suiteId), any());
@@ -156,7 +156,7 @@ public class BackgroundTest {
 		verify(client, times(2)).startTestItem(same(stepIds.get(0)), firstStepStarts.capture());
 		ArgumentCaptor<StartTestItemRQ> secondStepStarts = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(client, times(2)).startTestItem(same(stepIds.get(1)), secondStepStarts.capture());
-		verify(client, times(4)).log(any(List.class));
+		verify(client, times(5)).log(any(List.class));
 
 		assertThat(firstStepStarts.getAllValues()
 				.stream()

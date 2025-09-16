@@ -52,21 +52,21 @@ public class CodeRefTest {
 	@CucumberOptions(features = "src/test/resources/features/belly.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestScenarioReporter" })
-	public static class BellyScenarioReporter extends AbstractTestNGCucumberTests {
+	public static class BellyScenarioReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
 	@CucumberOptions(features = "src/test/resources/features/belly.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
-	public static class BellyStepReporter extends AbstractTestNGCucumberTests {
+	public static class BellyStepReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
 	@CucumberOptions(features = "src/test/resources/features/TwoScenarioInOne.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
-	public static class TwoFeaturesStepReporter extends AbstractTestNGCucumberTests {
+	public static class TwoFeaturesStepReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
@@ -85,6 +85,7 @@ public class CodeRefTest {
 	@BeforeEach
 	public void initLaunch() {
 		TestUtils.mockLaunch(client, launchId, suiteId, tests);
+		TestUtils.mockLogging(client);
 		TestScenarioReporter.RP.set(reportPortal);
 		TestStepReporter.RP.set(reportPortal);
 	}
@@ -95,7 +96,7 @@ public class CodeRefTest {
 
 	@Test
 	public void verify_code_reference_scenario_reporter() {
-		TestUtils.runTests(BellyScenarioReporter.class);
+		TestUtils.runTests(BellyScenarioReporterTest.class);
 
 		verify(client, times(1)).startTestItem(any());
 		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
@@ -119,7 +120,7 @@ public class CodeRefTest {
 
 	@Test
 	public void verify_code_reference_step_reporter() {
-		TestUtils.runTests(BellyStepReporter.class);
+		TestUtils.runTests(BellyStepReporterTest.class);
 
 		verify(client, times(1)).startTestItem(any());
 		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
@@ -148,7 +149,7 @@ public class CodeRefTest {
 
 	@Test
 	public void verify_code_reference_two_features_step_reporter() {
-		TestUtils.runTests(TwoFeaturesStepReporter.class);
+		TestUtils.runTests(TwoFeaturesStepReporterTest.class);
 
 		verify(client, times(1)).startTestItem(any());
 		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);

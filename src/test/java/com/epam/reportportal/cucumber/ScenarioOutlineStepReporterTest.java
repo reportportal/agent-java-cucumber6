@@ -53,14 +53,14 @@ public class ScenarioOutlineStepReporterTest {
 	@CucumberOptions(features = "src/test/resources/features/BasicScenarioOutlineParameters.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
-	public static class RunOutlineParametersTestStepReporter extends AbstractTestNGCucumberTests {
+	public static class RunOutlineParametersTestStepReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
 	@CucumberOptions(features = "src/test/resources/features/DynamicScenarioOutlineNames.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
-	public static class RunDynamicScenarioOutlineTitlesTestStepReporter extends AbstractTestNGCucumberTests {
+	public static class RunDynamicScenarioOutlineTitlesTestStepReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
@@ -79,6 +79,7 @@ public class ScenarioOutlineStepReporterTest {
 	@BeforeEach
 	public void initLaunch() {
 		TestUtils.mockLaunch(client, launchId, suiteId, tests);
+		TestUtils.mockLogging(client);
 		TestScenarioReporter.RP.set(reportPortal);
 		TestStepReporter.RP.set(reportPortal);
 	}
@@ -89,7 +90,7 @@ public class ScenarioOutlineStepReporterTest {
 	// Do not add iteration indexes / numbers, since it breaks re-runs
 	@Test
 	public void verify_scenario_outline_names() {
-		TestUtils.runTests(RunOutlineParametersTestStepReporter.class);
+		TestUtils.runTests(RunOutlineParametersTestStepReporterTest.class);
 
 		verify(client, times(1)).startTestItem(any());
 		ArgumentCaptor<StartTestItemRQ> testCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
@@ -108,7 +109,7 @@ public class ScenarioOutlineStepReporterTest {
 
 	@Test
 	public void verify_dynamic_scenario_outline_names() {
-		TestUtils.runTests(RunDynamicScenarioOutlineTitlesTestStepReporter.class);
+		TestUtils.runTests(RunDynamicScenarioOutlineTitlesTestStepReporterTest.class);
 
 		verify(client, times(1)).startTestItem(any());
 		ArgumentCaptor<StartTestItemRQ> testCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);

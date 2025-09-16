@@ -23,7 +23,6 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.util.test.CommonUtils;
-import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.cucumber.testng.AbstractTestNGCucumberTests;
 import io.cucumber.testng.CucumberOptions;
@@ -48,14 +47,14 @@ public class RuleKeywordTest {
 	@CucumberOptions(features = "src/test/resources/features/RuleKeyword.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
-	public static class SimpleTestStepReporter extends AbstractTestNGCucumberTests {
+	public static class SimpleTestStepReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
 	@CucumberOptions(features = "src/test/resources/features/RuleKeyword.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestScenarioReporter" })
-	public static class SimpleTestScenarioReporter extends AbstractTestNGCucumberTests {
+	public static class SimpleTestScenarioReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
@@ -84,11 +83,12 @@ public class RuleKeywordTest {
 	@Test
 	public void verify_rule_keyword_step_reporter() {
 		TestUtils.mockLaunch(client, launchId, featureId, tests);
+		TestUtils.mockLogging(client);
 		TestUtils.mockNestedSteps(client, steps);
 		TestScenarioReporter.RP.set(reportPortal);
 		TestStepReporter.RP.set(reportPortal);
 
-		TestUtils.runTests(SimpleTestStepReporter.class);
+		TestUtils.runTests(SimpleTestStepReporterTest.class);
 
 		verify(client, times(1)).startTestItem(any());
 		ArgumentCaptor<StartTestItemRQ> ruleRqCapture = ArgumentCaptor.forClass(StartTestItemRQ.class);
@@ -109,6 +109,7 @@ public class RuleKeywordTest {
 	@Test
 	public void verify_rule_keyword_scenario_reporter() {
 		TestUtils.mockLaunch(client, launchId, suiteId, featureId, ruleIds);
+		TestUtils.mockLogging(client);
 		TestUtils.mockNestedSteps(client,
 				tests.stream().flatMap(e -> e.getValue().stream().map(v -> Pair.of(e.getKey(), v))).collect(Collectors.toList())
 		);
@@ -117,7 +118,7 @@ public class RuleKeywordTest {
 		TestScenarioReporter.RP.set(reportPortal);
 		TestStepReporter.RP.set(reportPortal);
 
-		TestUtils.runTests(SimpleTestScenarioReporter.class);
+		TestUtils.runTests(SimpleTestScenarioReporterTest.class);
 
 		verify(client, times(1)).startTestItem(any());
 		verify(client, times(1)).startTestItem(same(suiteId), any());
