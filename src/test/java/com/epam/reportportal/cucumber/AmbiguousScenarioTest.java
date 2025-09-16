@@ -75,6 +75,7 @@ public class AmbiguousScenarioTest {
 	@BeforeEach
 	public void setup() {
 		TestUtils.mockLaunch(client, launchId, suiteId, testId, stepIds);
+		TestUtils.mockLogging(client);
 		TestScenarioReporter.RP.set(reportPortal);
 		TestStepReporter.RP.set(reportPortal);
 	}

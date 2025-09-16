@@ -125,7 +125,7 @@ public class HooksTest {
 		verify(client, times(1)).startTestItem(any());
 		verify(client, times(1)).startTestItem(same(suiteId), any());
 		verify(client, times(6)).startTestItem(same(featureId), any());
-		verify(client, times(6)).log(any(List.class));
+		verify(client, times(7)).log(any(List.class));
 	}
 
 	@Test
@@ -136,7 +136,7 @@ public class HooksTest {
 		verify(client, times(1)).startTestItem(any());
 		verify(client, times(1)).startTestItem(same(suiteId), any());
 		verify(client, times(4)).startTestItem(same(featureId), any());
-		verify(client, times(4)).log(any(List.class));
+		verify(client, times(5)).log(any(List.class));
 	}
 
 	@Test
@@ -149,7 +149,7 @@ public class HooksTest {
 
 		// @BeforeAll and @AfterAll hooks does not emit any events, see: https://github.com/cucumber/cucumber-jvm/issues/2422
 		verify(client, times(2)).startTestItem(same(featureId), any());
-		verify(client, times(3)).log(any(List.class));
+		verify(client, times(4)).log(any(List.class));
 	}
 
 	@Test
@@ -160,7 +160,7 @@ public class HooksTest {
 		verify(client, times(1)).startTestItem(any());
 		verify(client, times(1)).startTestItem(same(suiteId), any());
 		verify(client, times(2)).startTestItem(same(featureId), any());
-		verify(client, times(2)).log(any(List.class));
+		verify(client, times(3)).log(any(List.class));
 	}
 
 	@Test
@@ -170,7 +170,7 @@ public class HooksTest {
 
 		// Capture log entries
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
-		verify(client, times(2)).log(logCaptor.capture());
+		verify(client, times(3)).log(logCaptor.capture());
 
 		// Verify the first "Before" step has reported single Log entry with ERROR level and "SkipException" with "Skipping test" message
 		List<SaveLogRQ> errorLogs = filterLogs(

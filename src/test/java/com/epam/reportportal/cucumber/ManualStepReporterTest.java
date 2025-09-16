@@ -42,7 +42,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static com.epam.reportportal.cucumber.integration.util.TestUtils.extractJsonParts;
 import static com.epam.reportportal.cucumber.integration.util.TestUtils.filterLogs;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -54,14 +53,14 @@ public class ManualStepReporterTest {
 	@CucumberOptions(features = "src/test/resources/features/ManualStepReporter.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
-	public static class SimpleTestStepReporter extends AbstractTestNGCucumberTests {
+	public static class SimpleTestStepReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
 	@CucumberOptions(features = "src/test/resources/features/ManualStepReporter.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestScenarioReporter" })
-	public static class SimpleTestScenarioReporter extends AbstractTestNGCucumberTests {
+	public static class SimpleTestScenarioReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
@@ -123,13 +122,13 @@ public class ManualStepReporterTest {
 	@SuppressWarnings("unchecked")
 	public void verify_step_reporter_steps_integrity() {
 		TestUtils.mockNestedSteps(client, stepNestedSteps);
-		TestUtils.runTests(SimpleTestStepReporter.class);
+		TestUtils.runTests(SimpleTestStepReporterTest.class);
 
 		verify(client, times(2)).startTestItem(same(testId), any());
 		ArgumentCaptor<StartTestItemRQ> firstStepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(client, times(1)).startTestItem(same(stepIds.get(0)), firstStepCaptor.capture());
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
-		verify(client, times(5)).log(logCaptor.capture());
+		verify(client, times(6)).log(logCaptor.capture());
 		StartTestItemRQ firstStep = firstStepCaptor.getValue();
 		List<SaveLogRQ> logs = filterLogs(logCaptor, l -> true);
 		SaveLogRQ firstStepLog = logs.get(0);
@@ -187,13 +186,13 @@ public class ManualStepReporterTest {
 	public void verify_scenario_reporter_steps_integrity() {
 		TestUtils.mockNestedSteps(client, scenarioNestedSteps);
 		TestUtils.mockNestedSteps(client, scenarioSecondNestedSteps);
-		TestUtils.runTests(SimpleTestScenarioReporter.class);
+		TestUtils.runTests(SimpleTestScenarioReporterTest.class);
 
 		verify(client, times(2)).startTestItem(same(stepIds.get(0)), any());
 		ArgumentCaptor<StartTestItemRQ> firstStepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(client, times(1)).startTestItem(same(scenarioNestedStepIds.get(0)), firstStepCaptor.capture());
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
-		verify(client, times(5)).log(logCaptor.capture());
+		verify(client, times(6)).log(logCaptor.capture());
 		StartTestItemRQ firstStep = firstStepCaptor.getValue();
 		List<SaveLogRQ> logs = filterLogs(logCaptor, l -> true);
 

@@ -49,28 +49,28 @@ public class TestCaseIdTest {
 	@CucumberOptions(features = "src/test/resources/features/belly.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestScenarioReporter" })
-	public static class RunBellyTestScenarioReporter extends AbstractTestNGCucumberTests {
+	public static class RunBellyTestScenarioReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
 	@CucumberOptions(features = "src/test/resources/features/belly.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
-	public static class RunBellyTestStepReporter extends AbstractTestNGCucumberTests {
+	public static class RunBellyTestStepReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
 	@CucumberOptions(features = "src/test/resources/features/TestCaseIdOnAMethod.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporter" })
-	public static class StepDefStepReporter extends AbstractTestNGCucumberTests {
+	public static class StepDefStepReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
 	@CucumberOptions(features = "src/test/resources/features/BasicScenarioOutlineParameters.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestScenarioReporter" })
-	public static class OutlineScenarioReporter extends AbstractTestNGCucumberTests {
+	public static class OutlineScenarioReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
@@ -91,6 +91,7 @@ public class TestCaseIdTest {
 	@BeforeEach
 	public void setup() {
 		TestUtils.mockLaunch(client, launchId, suiteId, testId, stepIds);
+		TestUtils.mockLogging(client);
 		TestScenarioReporter.RP.set(reportPortal);
 		TestStepReporter.RP.set(reportPortal);
 	}
@@ -102,7 +103,7 @@ public class TestCaseIdTest {
 
 	@Test
 	public void shouldSendCaseIdWhenParametrizedScenarioReporter() {
-		TestUtils.runTests(RunBellyTestScenarioReporter.class);
+		TestUtils.runTests(RunBellyTestScenarioReporterTest.class);
 
 		verify(client, times(1)).startTestItem(any());
 		verify(client, times(1)).startTestItem(same(suiteId), any());
@@ -115,7 +116,7 @@ public class TestCaseIdTest {
 
 	@Test
 	public void shouldSendCaseIdWhenParametrizedStepReporter() {
-		TestUtils.runTests(RunBellyTestStepReporter.class);
+		TestUtils.runTests(RunBellyTestStepReporterTest.class);
 
 		verify(client, times(1)).startTestItem(any());
 		verify(client, times(1)).startTestItem(same(suiteId), any());
@@ -138,7 +139,7 @@ public class TestCaseIdTest {
 
 	@Test
 	public void verify_test_case_id_bypassed_through_annotation_on_a_stepdef() {
-		TestUtils.runTests(StepDefStepReporter.class);
+		TestUtils.runTests(StepDefStepReporterTest.class);
 		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(client, times(1)).startTestItem(same(testId), captor.capture());
 
@@ -153,7 +154,7 @@ public class TestCaseIdTest {
 	@Test
 	public void verify_test_case_id_scenario_outline() {
 		TestUtils.mockNestedSteps(client, nestedSteps);
-		TestUtils.runTests(OutlineScenarioReporter.class);
+		TestUtils.runTests(OutlineScenarioReporterTest.class);
 
 		verify(client, times(1)).startTestItem(any());
 		verify(client, times(1)).startTestItem(same(suiteId), any());

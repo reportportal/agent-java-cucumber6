@@ -46,8 +46,8 @@ import java.util.stream.Stream;
 import static com.epam.reportportal.cucumber.integration.util.TestUtils.filterLogs;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
 
 /**
  * @author <a href="mailto:ihar_kahadouski@epam.com">Ihar Kahadouski</a>
@@ -74,7 +74,8 @@ public class ParameterScenarioReporterTest {
 	}
 
 	private static final String DOCSTRING_PARAM = "My very long parameter\nWith some new lines";
-	private static final String TABLE_PARAM = MarkdownUtils.formatDataTable(Arrays.asList(Arrays.asList("key", "value"),
+	private static final String TABLE_PARAM = MarkdownUtils.formatDataTable(Arrays.asList(
+			Arrays.asList("key", "value"),
 			Arrays.asList("myKey", "myValue")
 	));
 
@@ -87,7 +88,8 @@ public class ParameterScenarioReporterTest {
 			.limit(9)
 			.collect(Collectors.toList());
 
-	private final List<Pair<String, String>> nestedStepMap = Stream.concat(IntStream.range(0, 4)
+	private final List<Pair<String, String>> nestedStepMap = Stream.concat(
+			IntStream.range(0, 4)
 					.mapToObj(i -> Pair.of(stepIds.get(0), nestedStepIds.get(i))),
 			IntStream.range(4, 9).mapToObj(i -> Pair.of(stepIds.get(1), nestedStepIds.get(i)))
 	).collect(Collectors.toList());
@@ -108,7 +110,8 @@ public class ParameterScenarioReporterTest {
 
 	public static final List<Pair<String, Object>> PARAMETERS = Arrays.asList(Pair.of("str", "\"first\""), Pair.of("parameters", 123));
 
-	public static final List<String> STEP_NAMES = Arrays.asList(String.format("When I have parameter %s", PARAMETERS.get(0).getValue()),
+	public static final List<String> STEP_NAMES = Arrays.asList(
+			String.format("When I have parameter %s", PARAMETERS.get(0).getValue()),
 			String.format("Then I emit number %s on level info", PARAMETERS.get(1).getValue().toString())
 	);
 
@@ -148,8 +151,8 @@ public class ParameterScenarioReporterTest {
 		assertThat(param1.getValue(), equalTo(DOCSTRING_PARAM));
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
-		verify(client, times(3)).log(logCaptor.capture());
-		List<String> logs = filterLogs(logCaptor, l -> l.getItemUuid().equals(nestedStepIds.get(1))).stream()
+		verify(client, times(4)).log(logCaptor.capture());
+		List<String> logs = filterLogs(logCaptor, l -> l.getItemUuid() != null && l.getItemUuid().equals(nestedStepIds.get(1))).stream()
 				.map(SaveLogRQ::getMessage)
 				.collect(Collectors.toList());
 
@@ -173,8 +176,8 @@ public class ParameterScenarioReporterTest {
 		assertThat(param1.getValue(), equalTo(TABLE_PARAM));
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
-		verify(client, times(2)).log(logCaptor.capture());
-		List<String> logs = filterLogs(logCaptor, l -> l.getItemUuid().equals(nestedStepIds.get(0))).stream()
+		verify(client, times(3)).log(logCaptor.capture());
+		List<String> logs = filterLogs(logCaptor, l -> l.getItemUuid() != null && l.getItemUuid().equals(nestedStepIds.get(0))).stream()
 				.map(SaveLogRQ::getMessage)
 				.collect(Collectors.toList());
 
