@@ -21,8 +21,8 @@ import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.cucumber.core.gherkin.Feature;
+import jakarta.annotation.Nonnull;
 
-import javax.annotation.Nonnull;
 import java.net.URI;
 
 public class TestScenarioReporterWithPause extends ScenarioReporter {

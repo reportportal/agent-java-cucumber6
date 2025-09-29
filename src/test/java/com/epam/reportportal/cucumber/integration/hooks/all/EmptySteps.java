@@ -16,7 +16,8 @@
 
 package com.epam.reportportal.cucumber.integration.hooks.all;
 
-import io.cucumber.java.*;
+import io.cucumber.java.AfterAll;
+import io.cucumber.java.BeforeAll;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import org.slf4j.Logger;

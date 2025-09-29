@@ -19,9 +19,9 @@ import com.epam.reportportal.listeners.ItemStatus;
 import io.cucumber.core.gherkin.Feature;
 import io.cucumber.plugin.event.Argument;
 import io.cucumber.plugin.event.Status;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
 

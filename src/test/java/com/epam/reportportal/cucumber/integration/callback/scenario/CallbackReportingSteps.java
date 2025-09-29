@@ -26,7 +26,7 @@ import io.cucumber.java.After;
 import io.cucumber.java.Scenario;
 import io.cucumber.java.en.Given;
 
-import java.util.Calendar;
+import java.time.Instant;
 
 public class CallbackReportingSteps {
 	public static final String STEP_TEXT = "I have a step for callback reporting";
@@ -54,7 +54,7 @@ public class CallbackReportingSteps {
 		FinishTestItemRQ finishTestItemRQ = new FinishTestItemRQ();
 		finishTestItemRQ.setDescription(description);
 		finishTestItemRQ.setStatus(status);
-		finishTestItemRQ.setEndTime(Calendar.getInstance().getTime());
+		finishTestItemRQ.setEndTime(Instant.now());
 		ItemTreeReporter.finishItem(
 				AbstractReporter.getCurrent().getReportPortal().getClient(),
 				finishTestItemRQ,
@@ -68,7 +68,7 @@ public class CallbackReportingSteps {
 				AbstractReporter.getCurrent().getReportPortal().getClient(),
 				"ERROR",
 				"Error message",
-				Calendar.getInstance().getTime(),
+				Instant.now(),
 				AbstractReporter.getCurrent().getItemTree().getLaunchId(),
 				testItemLeaf
 		);
