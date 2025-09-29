@@ -46,8 +46,8 @@ import static com.epam.reportportal.cucumber.integration.util.TestUtils.filterLo
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.same;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
 
 public class ManualStepReporterTest {
 	@CucumberOptions(features = "src/test/resources/features/ManualStepReporter.feature", glue = {

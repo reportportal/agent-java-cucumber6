@@ -18,8 +18,8 @@ package com.epam.reportportal.cucumber;
 
 import io.cucumber.plugin.event.Node;
 import io.reactivex.Maybe;
+import jakarta.annotation.Nonnull;
 
-import javax.annotation.Nonnull;
 import java.net.URI;
 
 public class RuleContext {

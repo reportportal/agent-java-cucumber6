@@ -63,9 +63,10 @@ public class RuleKeywordTest {
 	private final String featureId = CommonUtils.namedId("feature_");
 	private final List<String> ruleIds = Arrays.asList(CommonUtils.namedId("rule_"), CommonUtils.namedId("rule_"));
 	private final List<String> testIds = Stream.generate(() -> CommonUtils.namedId("scenario_")).limit(3).collect(Collectors.toList());
-	private final List<Pair<String, List<String>>> tests = Stream.concat(Stream.of(Pair.of(ruleIds.get(0), testIds.subList(0, 2))),
-			Stream.of(Pair.of(ruleIds.get(1), testIds.subList(2, 3)))
-	)
+	private final List<Pair<String, List<String>>> tests = Stream.concat(
+					Stream.of(Pair.of(ruleIds.get(0), testIds.subList(0, 2))),
+					Stream.of(Pair.of(ruleIds.get(1), testIds.subList(2, 3)))
+			)
 			.collect(Collectors.toList());
 	private final List<String> stepIds = Stream.generate(() -> CommonUtils.namedId("step_")).limit(6).collect(Collectors.toList());
 	private final List<Pair<String, String>> steps = IntStream.range(0, testIds.size())
@@ -110,7 +111,8 @@ public class RuleKeywordTest {
 	public void verify_rule_keyword_scenario_reporter() {
 		TestUtils.mockLaunch(client, launchId, suiteId, featureId, ruleIds);
 		TestUtils.mockLogging(client);
-		TestUtils.mockNestedSteps(client,
+		TestUtils.mockNestedSteps(
+				client,
 				tests.stream().flatMap(e -> e.getValue().stream().map(v -> Pair.of(e.getKey(), v))).collect(Collectors.toList())
 		);
 		TestUtils.mockNestedSteps(client, steps);

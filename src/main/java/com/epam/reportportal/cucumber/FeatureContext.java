@@ -19,8 +19,8 @@ package com.epam.reportportal.cucumber;
 import io.cucumber.core.gherkin.Feature;
 import io.cucumber.plugin.event.Node;
 import io.reactivex.Maybe;
+import jakarta.annotation.Nonnull;
 
-import javax.annotation.Nonnull;
 import java.net.URI;
 import java.util.*;
 
@@ -53,7 +53,8 @@ public class FeatureContext {
 			scenarioOutline.elements()
 					.stream()
 					.flatMap(e -> e.elements().stream())
-					.forEach(e -> scenarios.put(e.getLocation().getLine(),
+					.forEach(e -> scenarios.put(
+							e.getLocation().getLine(),
 							new ScenarioContext(uri, ruleQueue.peekLast(), scenarioOutline, e)
 					));
 		}

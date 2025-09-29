@@ -25,7 +25,6 @@ public class TestCaseIdOnMethodSteps {
 	private static final Logger LOGGER = LoggerFactory.getLogger(TestCaseIdOnMethodSteps.class);
 	public static final String TEST_CASE_ID = "My test case id";
 
-
 	@Given("I have a test case ID on a step definition method")
 	@TestCaseId(TEST_CASE_ID)
 	public void i_have_a_test_case_id_on_a_stepdef_method() {

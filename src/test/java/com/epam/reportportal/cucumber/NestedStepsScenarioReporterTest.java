@@ -70,9 +70,8 @@ public class NestedStepsScenarioReporterTest {
 			.map(s -> Pair.of(stepId, s))
 			.collect(Collectors.toList());
 
-	private final List<Pair<String, String>> secondLevelNestedStepIds = Stream.concat(Stream.of(Pair.of(nestedStepIds.get(0),
-			nestedNestedStepIds.get(0)
-			)),
+	private final List<Pair<String, String>> secondLevelNestedStepIds = Stream.concat(
+			Stream.of(Pair.of(nestedStepIds.get(0), nestedNestedStepIds.get(0))),
 			nestedNestedStepIds.stream().skip(1).map(i -> Pair.of(nestedStepIds.get(1), i))
 	).collect(Collectors.toList());
 
@@ -99,7 +98,8 @@ public class NestedStepsScenarioReporterTest {
 
 	public static final List<String> FIRST_LEVEL_NAMES = Arrays.asList("Given I have a step", "When I have one more step");
 
-	public static final List<String> SECOND_LEVEL_NAMES = Arrays.asList("A step inside step",
+	public static final List<String> SECOND_LEVEL_NAMES = Arrays.asList(
+			"A step inside step",
 			"A step with parameters",
 			"A step with attributes"
 	);

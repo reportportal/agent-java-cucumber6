@@ -35,7 +35,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
@@ -44,10 +43,10 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static org.mockito.ArgumentMatchers.any;
 import static com.epam.reportportal.cucumber.integration.util.TestUtils.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 public class BackgroundTest {
@@ -105,7 +104,7 @@ public class BackgroundTest {
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({"unchecked", "rawtypes"})
 	public void verify_background_step_reporter() {
 		runTests(MyStepReporterTest.class);
 
@@ -117,15 +116,19 @@ public class BackgroundTest {
 		verify(client, times(2)).startTestItem(same(testIds.get(1)), secondStepStarts.capture());
 		verify(client, times(5)).log(any(List.class));
 
-		assertThat(firstStepStarts.getAllValues()
-				.stream()
-				.filter(r -> r.getName().startsWith(AbstractReporter.BACKGROUND_PREFIX))
-				.collect(Collectors.toList()), hasSize(1));
+		assertThat(
+				firstStepStarts.getAllValues()
+						.stream()
+						.filter(r -> r.getName().startsWith(AbstractReporter.BACKGROUND_PREFIX))
+						.collect(Collectors.toList()), hasSize(1)
+		);
 
-		assertThat(secondStepStarts.getAllValues()
-				.stream()
-				.filter(r -> r.getName().startsWith(AbstractReporter.BACKGROUND_PREFIX))
-				.collect(Collectors.toList()), hasSize(1));
+		assertThat(
+				secondStepStarts.getAllValues()
+						.stream()
+						.filter(r -> r.getName().startsWith(AbstractReporter.BACKGROUND_PREFIX))
+						.collect(Collectors.toList()), hasSize(1)
+		);
 
 		ArgumentCaptor<FinishTestItemRQ> stepFinishes = ArgumentCaptor.forClass(FinishTestItemRQ.class);
 		verify(client).finishTestItem(same(stepIds.get(0)), stepFinishes.capture());
@@ -133,18 +136,24 @@ public class BackgroundTest {
 		verify(client).finishTestItem(same(stepIds.get(2)), stepFinishes.capture());
 		verify(client).finishTestItem(same(stepIds.get(3)), stepFinishes.capture());
 
-		List<Date> endDates = stepFinishes.getAllValues().stream().map(FinishExecutionRQ::getEndTime).filter(Objects::nonNull)
+		List<Comparable> endTimes = stepFinishes.getAllValues()
+				.stream()
+				.map(FinishExecutionRQ::getEndTime)
+				.filter(Objects::nonNull)
 				.collect(Collectors.toList());
-		assertThat(endDates, hasSize(4));
+		assertThat(endTimes, hasSize(4));
 
-		List<String> statuses = stepFinishes.getAllValues().stream().map(FinishExecutionRQ::getStatus).filter(Objects::nonNull)
+		List<String> statuses = stepFinishes.getAllValues()
+				.stream()
+				.map(FinishExecutionRQ::getStatus)
+				.filter(Objects::nonNull)
 				.collect(Collectors.toList());
 		assertThat(statuses, hasSize(4));
 		assertThat(statuses, containsInAnyOrder(Collections.nCopies(4, equalTo(ItemStatus.PASSED.name()))));
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({"unchecked", "rawtypes"})
 	public void verify_background_scenario_reporter() {
 		mockNestedSteps(client, nestedSteps);
 		runTests(MyScenarioReporterTest.class);
@@ -158,15 +167,19 @@ public class BackgroundTest {
 		verify(client, times(2)).startTestItem(same(stepIds.get(1)), secondStepStarts.capture());
 		verify(client, times(5)).log(any(List.class));
 
-		assertThat(firstStepStarts.getAllValues()
-				.stream()
-				.filter(r -> r.getName().startsWith(AbstractReporter.BACKGROUND_PREFIX))
-				.collect(Collectors.toList()), hasSize(1));
+		assertThat(
+				firstStepStarts.getAllValues()
+						.stream()
+						.filter(r -> r.getName().startsWith(AbstractReporter.BACKGROUND_PREFIX))
+						.collect(Collectors.toList()), hasSize(1)
+		);
 
-		assertThat(secondStepStarts.getAllValues()
-				.stream()
-				.filter(r -> r.getName().startsWith(AbstractReporter.BACKGROUND_PREFIX))
-				.collect(Collectors.toList()), hasSize(1));
+		assertThat(
+				secondStepStarts.getAllValues()
+						.stream()
+						.filter(r -> r.getName().startsWith(AbstractReporter.BACKGROUND_PREFIX))
+						.collect(Collectors.toList()), hasSize(1)
+		);
 
 		ArgumentCaptor<FinishTestItemRQ> stepFinishes = ArgumentCaptor.forClass(FinishTestItemRQ.class);
 		verify(client).finishTestItem(same(nestedStepIds.get(0)), stepFinishes.capture());
@@ -174,11 +187,17 @@ public class BackgroundTest {
 		verify(client).finishTestItem(same(nestedStepIds.get(2)), stepFinishes.capture());
 		verify(client).finishTestItem(same(nestedStepIds.get(3)), stepFinishes.capture());
 
-		List<Date> endDates = stepFinishes.getAllValues().stream().map(FinishExecutionRQ::getEndTime).filter(Objects::nonNull)
+		List<Comparable> endTimes = stepFinishes.getAllValues()
+				.stream()
+				.map(FinishExecutionRQ::getEndTime)
+				.filter(Objects::nonNull)
 				.collect(Collectors.toList());
-		assertThat(endDates, hasSize(4));
+		assertThat(endTimes, hasSize(4));
 
-		List<String> statuses = stepFinishes.getAllValues().stream().map(FinishExecutionRQ::getStatus).filter(Objects::nonNull)
+		List<String> statuses = stepFinishes.getAllValues()
+				.stream()
+				.map(FinishExecutionRQ::getStatus)
+				.filter(Objects::nonNull)
 				.collect(Collectors.toList());
 		assertThat(statuses, hasSize(4));
 		assertThat(statuses, containsInAnyOrder(Collections.nCopies(4, equalTo(ItemStatus.PASSED.name()))));
@@ -187,11 +206,17 @@ public class BackgroundTest {
 		verify(client).finishTestItem(same(stepIds.get(0)), testFinishes.capture());
 		verify(client).finishTestItem(same(stepIds.get(1)), testFinishes.capture());
 
-		endDates = testFinishes.getAllValues().stream().map(FinishExecutionRQ::getEndTime).filter(Objects::nonNull)
+		endTimes = testFinishes.getAllValues()
+				.stream()
+				.map(FinishExecutionRQ::getEndTime)
+				.filter(Objects::nonNull)
 				.collect(Collectors.toList());
-		assertThat(endDates, hasSize(2));
+		assertThat(endTimes, hasSize(2));
 
-		statuses = testFinishes.getAllValues().stream().map(FinishExecutionRQ::getStatus).filter(Objects::nonNull)
+		statuses = testFinishes.getAllValues()
+				.stream()
+				.map(FinishExecutionRQ::getStatus)
+				.filter(Objects::nonNull)
 				.collect(Collectors.toList());
 		assertThat(statuses, hasSize(2));
 		assertThat(statuses, containsInAnyOrder(Collections.nCopies(2, equalTo(ItemStatus.PASSED.name()))));

@@ -41,8 +41,8 @@ import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
 
 /**
  * @author <a href="mailto:ihar_kahadouski@epam.com">Ihar Kahadouski</a>
@@ -138,7 +138,8 @@ public class CodeRefTest {
 				.forEach(i -> assertThat(steps.get(i).getCodeRef(), allOf(notNullValue(), equalTo(STEP_CODE_REFERENCE.get(i)))));
 	}
 
-	private static final List<String> TWO_FEATURES_CODE_REFERENCES = Arrays.asList("src/test/resources/features/TwoScenarioInOne.feature:3",
+	private static final List<String> TWO_FEATURES_CODE_REFERENCES = Arrays.asList(
+			"src/test/resources/features/TwoScenarioInOne.feature:3",
 			"src/test/resources/features/TwoScenarioInOne.feature:7"
 	);
 

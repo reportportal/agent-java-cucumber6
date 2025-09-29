@@ -231,7 +231,9 @@ public class ParameterStepReporterTest {
 		List<String> logs = filterLogs(
 				logCaptor,
 				l -> l.getItemUuid() != null && l.getItemUuid().equals(tests.get(0).getValue().get(1))
-		).stream().map(SaveLogRQ::getMessage).collect(Collectors.toList());
+		).stream()
+				.map(SaveLogRQ::getMessage)
+				.collect(Collectors.toList());
 
 		assertThat(logs, hasSize(1));
 		assertThat(logs, not(hasItem(equalTo("\"\"\"\n" + DOCSTRING_PARAM + "\n\"\"\""))));

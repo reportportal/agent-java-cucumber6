@@ -31,7 +31,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -47,14 +46,14 @@ public class ItemTimeOrderTest {
 	@CucumberOptions(features = "src/test/resources/features/belly.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestScenarioReporterWithPause" })
-	public static class BellyScenarioReporter extends AbstractTestNGCucumberTests {
+	public static class BellyScenarioReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
 	@CucumberOptions(features = "src/test/resources/features/belly.feature", glue = {
 			"com.epam.reportportal.cucumber.integration.feature" }, plugin = { "pretty",
 			"com.epam.reportportal.cucumber.integration.TestStepReporterWithPause" })
-	public static class BellyStepReporter extends AbstractTestNGCucumberTests {
+	public static class BellyStepReporterTest extends AbstractTestNGCucumberTests {
 
 	}
 
@@ -75,9 +74,10 @@ public class ItemTimeOrderTest {
 		TestStepReporterWithPause.RP.set(reportPortal);
 	}
 
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Test
 	public void verify_time_order_scenario_reporter() {
-		TestUtils.runTests(BellyScenarioReporter.class);
+		TestUtils.runTests(BellyScenarioReporterTest.class);
 
 		ArgumentCaptor<StartLaunchRQ> launchCaptor = ArgumentCaptor.forClass(StartLaunchRQ.class);
 		verify(client).startLaunch(launchCaptor.capture());
@@ -86,7 +86,7 @@ public class ItemTimeOrderTest {
 		verify(client).startTestItem(same(suiteId), itemCaptor.capture());
 		verify(client).startTestItem(same(testId), itemCaptor.capture());
 
-		Date startTime = launchCaptor.getValue().getStartTime();
+		Comparable startTime = launchCaptor.getValue().getStartTime();
 		List<StartTestItemRQ> items = itemCaptor.getAllValues();
 		for (StartTestItemRQ item : items) {
 			assertThat(item.getStartTime(), allOf(notNullValue(), greaterThanOrEqualTo(startTime)));
@@ -94,9 +94,10 @@ public class ItemTimeOrderTest {
 		}
 	}
 
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Test
 	public void verify_time_order_step_reporter() {
-		TestUtils.runTests(BellyStepReporter.class);
+		TestUtils.runTests(BellyStepReporterTest.class);
 
 		ArgumentCaptor<StartLaunchRQ> launchCaptor = ArgumentCaptor.forClass(StartLaunchRQ.class);
 		verify(client).startLaunch(launchCaptor.capture());
@@ -106,7 +107,7 @@ public class ItemTimeOrderTest {
 		ArgumentCaptor<StartTestItemRQ> stepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(client, times(3)).startTestItem(same(testId), stepCaptor.capture());
 
-		Date startTime = launchCaptor.getValue().getStartTime();
+		Comparable startTime = launchCaptor.getValue().getStartTime();
 		List<StartTestItemRQ> items = itemCaptor.getAllValues();
 		for (StartTestItemRQ item : items) {
 			assertThat(item.getStartTime(), allOf(notNullValue(), greaterThanOrEqualTo(startTime)));

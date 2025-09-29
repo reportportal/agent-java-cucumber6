@@ -17,8 +17,8 @@ package com.epam.reportportal.cucumber;
 
 import com.epam.reportportal.listeners.ItemType;
 import io.reactivex.Maybe;
+import jakarta.annotation.Nonnull;
 
-import javax.annotation.Nonnull;
 import java.util.Optional;
 
 /**

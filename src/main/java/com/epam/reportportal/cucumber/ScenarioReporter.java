@@ -22,10 +22,10 @@ import io.cucumber.plugin.event.HookTestStep;
 import io.cucumber.plugin.event.PickleStepTestStep;
 import io.cucumber.plugin.event.TestCase;
 import io.reactivex.Maybe;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.Calendar;
+import java.time.Instant;
 import java.util.Optional;
 
 /**
@@ -128,7 +128,7 @@ public class ScenarioReporter extends AbstractReporter {
 		rootSuiteId = new MemoizingSupplier<>(() -> {
 			StartTestItemRQ rq = new StartTestItemRQ();
 			rq.setName(DUMMY_ROOT_SUITE_NAME);
-			rq.setStartTime(Calendar.getInstance().getTime());
+			rq.setStartTime(Instant.now());
 			rq.setType(RP_STORY_TYPE);
 			return getLaunch().startTestItem(rq);
 		});

@@ -56,16 +56,20 @@ public class CallbackReportingIntegrationTest {
 	private final List<String> testIds = Stream.generate(() -> CommonUtils.namedId("test_")).limit(2).collect(Collectors.toList());
 	private final List<String> stepIds = Stream.generate(() -> CommonUtils.namedId("test_")).limit(4).collect(Collectors.toList());
 
-	private final List<Pair<String, List<String>>> tests = Arrays.asList(Pair.of(testIds.get(0), stepIds.subList(0, 2)),
+	private final List<Pair<String, List<String>>> tests = Arrays.asList(
+			Pair.of(testIds.get(0), stepIds.subList(0, 2)),
 			Pair.of(testIds.get(1), stepIds.subList(2, 4))
 	);
 
 	private final List<String> nestedStepIds = Stream.generate(() -> CommonUtils.namedId("nested_step_"))
 			.limit(4)
 			.collect(Collectors.toList());
-	private final List<Pair<String, String>> nestedSteps = Stream.concat(nestedStepIds.stream()
-			.map(s -> Pair.of(stepIds.get(0), s))
-			.limit(2), nestedStepIds.stream().skip(2).map(s -> Pair.of(stepIds.get(1), s))).collect(Collectors.toList());
+	private final List<Pair<String, String>> nestedSteps = Stream.concat(
+			nestedStepIds.stream()
+					.map(s -> Pair.of(stepIds.get(0), s))
+					.limit(2),
+			nestedStepIds.stream().skip(2).map(s -> Pair.of(stepIds.get(1), s))
+	).collect(Collectors.toList());
 
 	private final Supplier<ListenerParameters> params = () -> {
 		ListenerParameters p = TestUtils.standardParameters();
