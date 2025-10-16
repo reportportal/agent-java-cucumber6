@@ -39,7 +39,7 @@ repositories {
 }
 
 dependencies {
-    api 'com.epam.reportportal:client-java:5.4.3'
+    api 'com.epam.reportportal:client-java:5.4.4'
 
     implementation "io.cucumber:cucumber-gherkin:${project.cucumber_version}"
     implementation 'org.slf4j:slf4j-api:2.0.7'
@@ -53,7 +53,7 @@ dependencies {
     testImplementation 'org.hamcrest:hamcrest-core:2.2'
     testImplementation 'org.mockito:mockito-core:3.3.3'
     testImplementation 'org.mockito:mockito-junit-jupiter:3.3.3'
-    testImplementation 'ch.qos.logback:logback-classic:1.5.18'
+    testImplementation 'ch.qos.logback:logback-classic:1.5.19'
     testImplementation 'com.epam.reportportal:logger-java-logback:5.4.0'
     testImplementation ("org.junit.platform:junit-platform-runner:${project.junit_runner_version}") {
         exclude module: 'junit'
